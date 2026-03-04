@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clan Portal | Profile Setup</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="theme-red">
+  <main class="container">
+    <section class="card">
+      <h1>Profile Setup</h1>
+      <p class="subtitle">Upload your PFP and complete your profile.</p>
+      <form id="profileForm" class="stack">
+        <label for="pfpInput">Profile Picture</label>
+        <input id="pfpInput" type="file" accept="image/*" />
+
+        <label for="displayName">Display Name</label>
+        <input id="displayName" type="text" required maxlength="30" />
+
+        <label for="pronoun">Pronouns</label>
+        <input id="pronoun" type="text" required maxlength="20" placeholder="he/him, she/her, they/them" />
+
+        <label for="description">Description</label>
+        <textarea id="description" rows="4" maxlength="300"></textarea>
+
+        <button class="btn" type="submit">Save &amp; Go to Dashboard</button>
+      </form>
+    </section>
+  </main>
+  <script src="profile.js"></script>
+</body>
+</html>
