@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="theme-red">
+  <main class="container card">
+    <h1>Admin Panel</h1>
+    <p class="subtitle">Edit user stats, roles, bans, and read-only permissions.</p>
+    <form id="adminForm" class="grid-form">
+      <input id="targetUser" placeholder="Username" required>
+      <input id="kills" type="number" placeholder="Kills">
+      <input id="points" type="number" placeholder="Points">
+      <input id="role" placeholder="Role">
+      <label><input id="banned" type="checkbox"> Ban user</label>
+      <label><input id="allowReadonlyPosting" type="checkbox"> Allow posting in read-only channels</label>
+      <button class="btn">Save User</button>
+    </form>
+    <pre id="adminOutput"></pre>
+  </main>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
