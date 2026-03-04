@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clan Server</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body class="theme-red server-layout">
+  <aside class="server-sidebar">
+    <h2>Clan Server</h2>
+    <div class="category">IMPORTANT</div>
+    <button class="channel" data-channel="rules"><i class="fa-solid fa-book"></i> rules</button>
+    <button class="channel" data-channel="announcement"><i class="fa-solid fa-bullhorn"></i> announcement</button>
+    <button class="channel" data-channel="sub_announcement"><i class="fa-solid fa-bell"></i> sub_announcement</button>
+    <button class="channel" data-channel="giveaway"><i class="fa-solid fa-gift"></i> giveaway</button>
+
+    <div class="category">LINEUPS</div>
+    <button class="channel" data-channel="main_lineup"><i class="fa-solid fa-bolt"></i> main_lineup</button>
+    <button class="channel" data-channel="sub_lineup"><i class="fa-solid fa-snowflake"></i> sub_lineup</button>
+
+    <div class="category">SOCIAL</div>
+    <button class="channel" data-channel="chat"><i class="fa-solid fa-comments"></i> chat</button>
+    <button class="channel" data-channel="media"><i class="fa-solid fa-camera"></i> media</button>
+
+    <div class="category">HOSTING</div>
+    <button class="channel" data-channel="tryouts"><i class="fa-solid fa-bullseye"></i> tryouts</button>
+    <button class="channel" data-channel="tryouts_result"><i class="fa-solid fa-tornado"></i> tryouts_result</button>
+  </aside>
+
+  <main class="channel-panel">
+    <div class="chat-header">
+      <h3 id="currentChannel"># rules</h3>
+      <button class="icon-btn" onclick="location.href='Dashboard.html'"><i class="fa-solid fa-arrow-left"></i></button>
+    </div>
+    <div id="channelMessages" class="messages"></div>
+    <form id="channelForm" class="chat-form">
+      <label class="icon-btn" for="channelImage"><i class="fa-solid fa-plus"></i></label>
+      <input id="channelImage" type="file" accept="image/*" class="hidden" />
+      <input id="channelText" type="text" placeholder="Message channel..." />
+      <button class="btn">Send</button>
+    </form>
+  </main>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="server.js"></script>
+</body>
+</html>
