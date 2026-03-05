@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clan Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="theme-red">
+  <header class="topbar">
+    <button id="chatMenuBtn" class="icon-btn"><i class="fa-solid fa-bars"></i></button>
+    <h1><i class="fa-solid fa-headset"></i> Chat with Admins</h1>
+    <span></span>
+  </header>
+
+  <aside id="chatMenu" class="side-menu hidden-left">
+    <a class="menu-item" href="Dashboard.html">Dashboard</a>
+    <a class="menu-item" href="Server.html">Server</a>
+  </aside>
+
+  <main class="container chat-page-grid">
+    <section class="card">
+      <h3>Admin Support</h3>
+      <div id="adminMessages" class="messages chat-page-box"></div>
+      <form id="adminForm" class="chat-form sticky-form">
+        <input id="adminText" type="text" placeholder="Message admins..." required />
+        <button class="btn">Send</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h3>Direct Messages</h3>
+      <div id="dmConversationList" class="ticket-list"></div>
+      <div id="dmThreadWrap" class="hidden" style="margin-top:.6rem;">
+        <h4 id="dmThreadTitle">Conversation</h4>
+        <div id="dmThreadMessages" class="messages chat-page-box"></div>
+        <form id="dmThreadForm" class="chat-form sticky-form">
+          <input id="dmThreadText" type="text" placeholder="Send message..." required />
+          <button class="btn">Send</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="chat.js"></script>
+</body>
+</html>
