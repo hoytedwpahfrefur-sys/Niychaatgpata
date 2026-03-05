@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ticket Panel</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="theme-red">
+  <main class="container card">
+    <h1>Ticket Panel</h1>
+
+    <section>
+      <h3>Tickets</h3>
+      <div id="ticketList" class="ticket-list"></div>
+    </section>
+
+    <section id="ticketThreadWrap" class="hidden" style="margin-top:1rem;">
+      <h3 id="threadTitle">Ticket Thread</h3>
+      <div id="ticketMessages" class="messages" style="height:40vh"></div>
+      <form id="ticketForm" class="chat-form">
+        <input id="ticketText" placeholder="Admin reply..." required>
+        <button class="btn">Send</button>
+      </form>
+    </section>
+  </main>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="ticket.js"></script>
+</body>
+</html>
