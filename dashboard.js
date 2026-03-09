@@ -89,3 +89,27 @@ window.addEventListener('resize', () => {
     document.getElementById('dashMsg').focus();
   }
 });
+
+
+function syncAnnouncements(msgs = []) {
+  const wrap = document.querySelector('.announce-list');
+  if (!wrap) return;
+  const rows = (msgs || []).slice(-3).reverse();
+  if (!rows.length) return;
+  wrap.innerHTML = '';
+  rows.forEach((m) => {
+    const item = document.createElement('div');
+    item.className = 'announce-item';
+    item.innerHTML = `<div class='announce-tag'>Server</div><div class='announce-text'>${m.text || ''}</div><div class='announce-date'>${new Date().toLocaleString()}</div>`;
+    wrap.appendChild(item);
+  });
+}
+
+socket.emit('getChannelMessages', 'announcement');
+socket.on('channelMessages', (msgs) => {
+  if (document.querySelector('.announce-list')) syncAnnouncements(msgs);
+});
+const rulesAction = document.querySelector('.action-btn[href="#"] i.fa-scroll');
+if (rulesAction) rulesAction.parentElement.setAttribute('href','rules.html');
+const activity = document.getElementById('activityFeed');
+if (activity) activity.closest('.card')?.remove();
