@@ -2,9 +2,9 @@
   "name": "clan-portal",
   "version": "1.0.0",
   "description": "Clan website with dashboard, server, admin and ticket panel",
-  "main": "app.js",
+  "main": "app-main.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node app-main.js"
   },
   "dependencies": {
     "express": "^4.19.2",

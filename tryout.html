@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tryout Application</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --red:        #c0000a;
+      --red-bright: #ff1a27;
+      --red-dim:    #6b0005;
+      --red-glow:   rgba(192,0,10,0.15);
+      --black:      #060606;
+      --surface:    #0d0d0d;
+      --panel:      #111111;
+      --raised:     #161616;
+      --text:       #ddd5d5;
+      --text-dim:   #5a4a4a;
+      --border:     rgba(192,0,10,0.22);
+      --border-sub: rgba(255,255,255,0.045);
+    }
+
+    html, body { min-height:100%; background:var(--black); color:var(--text); font-family:'Rajdhani',sans-serif; overflow-x:hidden; }
+
+    /* scanlines */
+    body::after { content:''; position:fixed; inset:0; pointer-events:none; z-index:9000; background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,0.07) 3px,rgba(0,0,0,0.07) 4px); }
+
+    /* 3D canvas */
+    #bg-canvas { position:fixed; inset:0; z-index:0; pointer-events:none; }
+
+    ::-webkit-scrollbar { width:3px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:var(--red-dim); }
+
+    /* ══════════════════════════════
+       TOPBAR
+    ══════════════════════════════ */
+    .topbar {
+      position:fixed; top:0; left:0; right:0; height:52px;
+      display:flex; align-items:center; gap:12px; padding:0 20px;
+      background:rgba(13,13,13,.96); border-bottom:1px solid var(--border);
+      backdrop-filter:blur(8px); z-index:100;
+      animation:slideDown .5s ease both;
+    }
+    @keyframes slideDown { from{transform:translateY(-100%);opacity:0;} to{transform:translateY(0);opacity:1;} }
+
+    .topbar-logo { font-family:'Bebas Neue',cursive; font-size:18px; letter-spacing:5px; color:var(--text); flex:1; }
+    .topbar-logo span { color:var(--red); }
+    .icon-btn { background:transparent; border:1px solid var(--border); color:var(--text-dim); width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:12px; flex-shrink:0; transition:color .2s,border-color .2s,background .2s; text-decoration:none; }
+    .icon-btn:hover { color:var(--red-bright); border-color:var(--red); background:var(--red-glow); }
+
+    /* ══════════════════════════════
+       PAGE WRAPPER
+    ══════════════════════════════ */
+    .page-wrap {
+      position:relative; z-index:1;
+      min-height:100vh; padding:80px 20px 48px;
+      display:flex; align-items:flex-start; justify-content:center;
+    }
+
+    /* ══════════════════════════════
+       FORM PAGE
+    ══════════════════════════════ */
+    #formPage {
+      width:100%; max-width:600px;
+      animation:fadeUp .6s ease .1s both;
+    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
+
+    /* Header block */
+    .form-header { margin-bottom:28px; position:relative; }
+    .form-header::before {
+      content:''; position:absolute; top:0; left:-20px; width:3px; height:100%;
+      background:linear-gradient(to bottom, var(--red-bright), transparent);
+    }
+    .form-eyebrow {
+      font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:5px;
+      color:var(--red); text-transform:uppercase; margin-bottom:8px;
+    }
+    .form-title {
+      font-family:'Bebas Neue',cursive; font-size:clamp(32px,7vw,52px);
+      letter-spacing:8px; color:var(--text); line-height:1;
+    }
+    .form-sub {
+      font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:3px;
+      color:var(--text-dim); margin-top:10px; line-height:1.7;
+      text-transform:uppercase;
+    }
+
+    /* Scan bar */
+    .scan-bar { height:1px; background:rgba(192,0,10,.08); position:relative; overflow:hidden; margin:20px 0 28px; }
+    .scan-fill { position:absolute; top:0; left:-60%; width:60%; height:100%; background:linear-gradient(to right,transparent,var(--red-bright),transparent); animation:scanm 3s ease-in-out infinite; }
+    @keyframes scanm { from{left:-60%;} to{left:110%;} }
+
+    /* ── Field groups ── */
+    .field-group { display:flex; flex-direction:column; gap:18px; }
+
+    .field {
+      display:flex; flex-direction:column; gap:6px;
+      animation:fadeUp .5s ease both;
+    }
+    .field:nth-child(1){animation-delay:.1s;}
+    .field:nth-child(2){animation-delay:.17s;}
+    .field:nth-child(3){animation-delay:.24s;}
+    .field:nth-child(4){animation-delay:.31s;}
+    .field:nth-child(5){animation-delay:.38s;}
+
+    .field-label {
+      font-family:'Share Tech Mono',monospace; font-size:9px;
+      letter-spacing:4px; color:var(--red); text-transform:uppercase;
+      display:flex; align-items:center; gap:8px;
+    }
+    .field-label i { font-size:10px; }
+    .field-label .req { color:var(--red-bright); font-size:12px; }
+
+    /* Text inputs */
+    .field-input {
+      background:var(--raised); border:1px solid var(--border-sub);
+      border-bottom:1px solid var(--border);
+      color:var(--text);
+      font-family:'Rajdhani',sans-serif; font-weight:600;
+      font-size:15px; letter-spacing:1px;
+      padding:13px 16px; outline:none; width:100%;
+      transition:border-color .25s,background .25s,box-shadow .25s;
+      caret-color:var(--red-bright);
+    }
+    .field-input::placeholder { color:var(--text-dim); font-weight:400; letter-spacing:1px; }
+    .field-input:focus {
+      border-color:var(--red); background:rgba(192,0,10,.07);
+      box-shadow:0 0 0 1px rgba(192,0,10,.12), inset 0 1px 0 rgba(192,0,10,.08);
+    }
+    .field-input.invalid { border-color:var(--red-bright) !important; box-shadow:0 0 12px rgba(255,26,39,.2) !important; animation:shake .35s ease; }
+    @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-5px);} 75%{transform:translateX(5px);} }
+
+    /* Textarea */
+    .field-textarea {
+      background:var(--raised); border:1px solid var(--border-sub);
+      border-bottom:1px solid var(--border);
+      color:var(--text);
+      font-family:'Rajdhani',sans-serif; font-weight:500;
+      font-size:14px; letter-spacing:1px; line-height:1.7;
+      padding:13px 16px; outline:none; width:100%; resize:vertical; min-height:110px;
+      transition:border-color .25s,background .25s,box-shadow .25s;
+      caret-color:var(--red-bright);
+    }
+    .field-textarea::placeholder { color:var(--text-dim); font-weight:400; }
+    .field-textarea:focus {
+      border-color:var(--red); background:rgba(192,0,10,.07);
+      box-shadow:0 0 0 1px rgba(192,0,10,.12);
+    }
+
+    /* Character select (main character) */
+    .char-grid {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:8px;
+    }
+    .char-option { display:none; }
+    .char-label {
+      display:flex; align-items:center; gap:9px;
+      padding:11px 14px;
+      background:var(--raised); border:1px solid var(--border-sub);
+      color:var(--text-dim); cursor:pointer;
+      font-family:'Rajdhani',sans-serif; font-weight:600;
+      font-size:12px; letter-spacing:2px; text-transform:uppercase;
+      transition:color .2s,border-color .2s,background .2s;
+      position:relative; overflow:hidden;
+    }
+    .char-label i { font-size:11px; color:var(--red-dim); transition:color .2s; }
+    .char-label::before {
+      content:''; position:absolute; bottom:0; left:0; right:0; height:1px;
+      background:var(--red); transform:scaleX(0); transition:transform .25s;
+    }
+    .char-option:checked + .char-label {
+      color:var(--text); border-color:var(--red);
+      background:rgba(192,0,10,.12);
+    }
+    .char-option:checked + .char-label i { color:var(--red-bright); }
+    .char-option:checked + .char-label::before { transform:scaleX(1); }
+    .char-label:hover { color:var(--text); border-color:var(--border); background:#1c1c1c; }
+    .char-label:hover i { color:var(--red); }
+    .char-label.invalid-select { border-color:var(--red-bright) !important; }
+
+    /* File upload */
+    .file-drop {
+      position:relative;
+      border:1px dashed var(--border);
+      background:var(--raised);
+      padding:28px 20px;
+      text-align:center; cursor:pointer;
+      transition:border-color .25s,background .25s;
+    }
+    .file-drop:hover, .file-drop.dragover {
+      border-color:var(--red); background:rgba(192,0,10,.07);
+    }
+    .file-drop input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .file-drop-icon { font-size:22px; color:var(--red-dim); margin-bottom:10px; display:block; }
+    .file-drop-label { font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; }
+    .file-drop-sub { font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:2px; color:var(--text-dim); margin-top:5px; opacity:.6; }
+    .file-preview {
+      display:none; margin-top:12px;
+      background:var(--panel); border:1px solid var(--border);
+      padding:10px 14px;
+      display:flex; align-items:center; gap:12px;
+    }
+    .file-preview.has-file { display:flex; }
+    .file-preview img { width:48px; height:48px; object-fit:cover; border:1px solid var(--border); flex-shrink:0; }
+    .file-preview-name { font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:2px; color:var(--text); flex:1; word-break:break-all; }
+    .file-remove { background:transparent; border:none; color:var(--text-dim); cursor:pointer; font-size:12px; transition:color .2s; }
+    .file-remove:hover { color:var(--red-bright); }
+
+    /* Disclaimer box */
+    .disclaimer {
+      background:var(--raised); border:1px solid var(--border-sub);
+      border-left:2px solid var(--red-dim);
+      padding:12px 16px; margin-top:4px;
+    }
+    .disclaimer p {
+      font-family:'Share Tech Mono',monospace; font-size:9px;
+      letter-spacing:2px; color:var(--text-dim);
+      text-transform:uppercase; line-height:1.8;
+    }
+    .disclaimer p span { color:var(--red); }
+
+    /* Submit button */
+    .submit-wrap { margin-top:28px; display:flex; flex-direction:column; align-items:stretch; gap:10px; }
+    .submit-btn {
+      position:relative; padding:16px 40px;
+      background:transparent; border:1px solid var(--red);
+      color:var(--text); font-family:'Rajdhani',sans-serif;
+      font-weight:700; font-size:15px; letter-spacing:6px;
+      text-transform:uppercase; cursor:pointer; overflow:hidden;
+      transition:color .3s,border-color .3s,box-shadow .3s;
+      display:flex; align-items:center; justify-content:center; gap:12px;
+    }
+    .submit-btn::before {
+      content:''; position:absolute; inset:0; background:var(--red);
+      transform:scaleX(0); transform-origin:left;
+      transition:transform .35s cubic-bezier(.4,0,.2,1); z-index:-1;
+    }
+    .submit-btn:hover::before { transform:scaleX(1); }
+    .submit-btn:hover { color:#fff; border-color:var(--red-bright); box-shadow:0 0 30px rgba(192,0,10,.4); }
+    .submit-btn .btn-arrow { font-size:14px; transition:transform .3s; }
+    .submit-btn:hover .btn-arrow { transform:translateX(5px); }
+
+    /* Sending spinner state */
+    .submit-btn.sending { pointer-events:none; opacity:.7; }
+    .spinner { display:none; width:14px; height:14px; border:2px solid rgba(255,255,255,.2); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
+    @keyframes spin { to{transform:rotate(360deg);} }
+    .submit-btn.sending .spinner { display:block; }
+    .submit-btn.sending .btn-text { opacity:.5; }
+    .submit-btn.sending .btn-arrow { display:none; }
+
+    /* ══════════════════════════════
+       PENDING PAGE
+    ══════════════════════════════ */
+    #pendingPage {
+      display:none; position:fixed; inset:0; z-index:200;
+      background:var(--black);
+      flex-direction:column; align-items:center; justify-content:center;
+      padding:30px 24px;
+    }
+    #pendingPage.show { display:flex; animation:fadeUp .6s ease both; }
+
+    .pending-emblem { width:76px; height:76px; position:relative; margin-bottom:28px; }
+    .pending-emblem svg { width:100%; height:100%; animation:hexspin 18s linear infinite; }
+    @keyframes hexspin { to{transform:rotate(360deg);} }
+    .pending-core {
+      position:absolute; inset:16px; border-radius:50%;
+      background:radial-gradient(circle,var(--red-bright) 0%,var(--red) 55%,transparent 75%);
+      animation:corepulse 2.2s ease-in-out infinite;
+    }
+    @keyframes corepulse { 0%,100%{box-shadow:0 0 18px var(--red),0 0 36px rgba(192,0,10,.3);} 50%{box-shadow:0 0 4px var(--red-dim);} }
+
+    .pending-title {
+      font-family:'Bebas Neue',cursive; font-size:clamp(34px,8vw,56px);
+      letter-spacing:8px; color:var(--text); text-align:center; line-height:1;
+    }
+    .pending-code {
+      font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:5px;
+      color:var(--red); text-transform:uppercase; margin-top:10px; text-align:center;
+    }
+
+    .pending-divider {
+      width:clamp(180px,40vw,400px); height:1px;
+      background:linear-gradient(to right,transparent,var(--red),transparent);
+      margin:24px auto;
+    }
+
+    .pending-box {
+      max-width:480px; width:100%;
+      background:var(--panel); border:1px solid var(--border);
+      padding:24px 26px; position:relative;
+      text-align:center;
+    }
+    .pending-box::before { content:''; position:absolute; top:-1px; left:-1px; width:16px; height:16px; border-top:2px solid var(--red); border-left:2px solid var(--red); }
+    .pending-box::after  { content:''; position:absolute; bottom:-1px; right:-1px; width:16px; height:16px; border-bottom:2px solid var(--red); border-right:2px solid var(--red); }
+
+    .pending-msg {
+      font-family:'Rajdhox',sans-serif; font-family:'Rajdhani',sans-serif;
+      font-size:16px; font-weight:600; letter-spacing:1px;
+      color:var(--text); line-height:1.7; margin-bottom:16px;
+    }
+    .pending-msg span { color:var(--red-bright); }
+
+    .pending-warn {
+      font-family:'Share Tech Mono',monospace; font-size:9px;
+      letter-spacing:3px; color:var(--text-dim);
+      text-transform:uppercase; line-height:1.9;
+      border-top:1px solid var(--border-sub); padding-top:14px;
+    }
+    .pending-warn strong { color:var(--red); }
+
+    .blink { animation:blink 1.3s step-end infinite; }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+
+    /* Status rows */
+    .pending-status-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:20px;
+    }
+    .pstat {
+      background:var(--raised); border:1px solid var(--border-sub);
+      padding:10px 12px; text-align:left;
+    }
+    .pstat-label { font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:3px; color:var(--text-dim); text-transform:uppercase; }
+    .pstat-val   { font-family:'Bebas Neue',cursive; font-size:18px; letter-spacing:2px; color:var(--red-bright); margin-top:3px; }
+
+    /* mobile */
+    @media(max-width:480px) {
+      .char-grid { grid-template-columns:1fr 1fr; }
+      .pending-status-grid { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-logo">WRAITH <span>//</span> TRYOUTS</div>
+  <a class="icon-btn" href="Dashboard.html" title="Dashboard"><i class="fa-solid fa-house"></i></a>
+  <a class="icon-btn" href="server-main.html" title="Server"><i class="fa-solid fa-server"></i></a>
+</header>
+
+<!-- PAGE WRAP -->
+<div class="page-wrap">
+
+  <!-- ═══ FORM PAGE ═══ -->
+  <div id="formPage">
+
+    <div class="form-header">
+      <div class="form-eyebrow">// Wraith Clan · Season 4</div>
+      <div class="form-title">Tryout Application</div>
+      <div class="form-sub">
+        Fill in every field accurately · False info = instant decline<br/>
+        Review time: 24–72 hours after submission
+      </div>
+    </div>
+
+    <div class="scan-bar"><div class="scan-fill"></div></div>
+
+    <div class="field-group">
+
+      <!-- Roblox Username -->
+      <div class="field">
+        <label class="field-label" for="rblxUsername">
+          <i class="fa-solid fa-user"></i> Roblox Username <span class="req">*</span>
+        </label>
+        <input class="field-input" id="rblxUsername" type="text" placeholder="Enter your Roblox username..." autocomplete="off" spellcheck="false"/>
+      </div>
+
+      <!-- TSB Kills -->
+      <div class="field">
+        <label class="field-label" for="tsbKills">
+          <i class="fa-solid fa-skull"></i> TSB Kills <span class="req">*</span>
+        </label>
+        <input class="field-input" id="tsbKills" type="number" min="0" placeholder="How many kills do you have?"/>
+      </div>
+
+      <!-- Describe Skills -->
+      <div class="field">
+        <label class="field-label" for="skillsDesc">
+          <i class="fa-solid fa-bolt"></i> Describe Your Skills <span class="req">*</span>
+        </label>
+        <textarea class="field-textarea" id="skillsDesc" placeholder="Tell us about your playstyle, strengths, strategies — be specific..."></textarea>
+      </div>
+
+      <!-- Main Character -->
+      <div class="field">
+        <div class="field-label"><i class="fa-solid fa-person-running"></i> Main Character <span class="req">*</span></div>
+        <div class="char-grid" id="charGrid">
+
+          <input class="char-option" type="radio" name="mainChar" id="charSaitama" value="Saitama"/>
+          <label class="char-label" for="charSaitama"><i class="fa-solid fa-fist-raised"></i> Saitama</label>
+
+          <input class="char-option" type="radio" name="mainChar" id="charGoku" value="Goku"/>
+          <label class="char-label" for="charGoku"><i class="fa-solid fa-star"></i> Goku</label>
+
+          <input class="char-option" type="radio" name="mainChar" id="charNaruto" value="Naruto"/>
+          <label class="char-label" for="charNaruto"><i class="fa-solid fa-wind"></i> Naruto</label>
+
+          <input class="char-option" type="radio" name="mainChar" id="charItachi" value="Itachi"/>
+          <label class="char-label" for="charItachi"><i class="fa-solid fa-eye"></i> Itachi</label>
+
+          <input class="char-option" type="radio" name="mainChar" id="charZoro" value="Zoro"/>
+          <label class="char-label" for="charZoro"><i class="fa-solid fa-khanda"></i> Zoro</label>
+
+          <input class="char-option" type="radio" name="mainChar" id="charOther" value="Other"/>
+          <label class="char-label" for="charOther"><i class="fa-solid fa-ellipsis"></i> Other</label>
+
+        </div>
+      </div>
+
+      <!-- Kill Proof Image -->
+      <div class="field">
+        <div class="field-label"><i class="fa-solid fa-image"></i> Kill Proof Screenshot <span class="req">*</span></div>
+        <div class="file-drop" id="fileDrop">
+          <input type="file" id="killProof" accept="image/*"/>
+          <i class="fa-solid fa-cloud-arrow-up file-drop-icon"></i>
+          <div class="file-drop-label">Drop image here or click to browse</div>
+          <div class="file-drop-sub">PNG · JPG · WEBP · Max 10MB</div>
+        </div>
+        <div class="file-preview" id="filePreview" style="display:none;">
+          <img id="filePreviewImg" src="" alt="preview"/>
+          <span class="file-preview-name" id="filePreviewName"></span>
+          <button class="file-remove" id="fileRemove" title="Remove"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div class="disclaimer">
+        <p>
+          By submitting you confirm all information is accurate.<br/>
+          <span>Fake screenshots or false stats will result in a permanent ban.</span><br/>
+          Results are sent via DM — keep your DMs open.
+        </p>
+      </div>
+
+      <!-- Submit -->
+      <div class="submit-wrap">
+        <button class="submit-btn" id="submitBtn" type="button" onclick="submitForm()">
+          <div class="spinner"></div>
+          <span class="btn-text">Send Application</span>
+          <span class="btn-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+        </button>
+      </div>
+
+    </div><!-- /field-group -->
+  </div><!-- /formPage -->
+
+</div><!-- /page-wrap -->
+
+<!-- ═══ PENDING PAGE ═══ -->
+<div id="pendingPage">
+
+  <div class="pending-emblem">
+    <div class="pending-core"></div>
+    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="46" stroke="#c0000a" stroke-width=".6" stroke-dasharray="5 7"/>
+      <polygon points="50,8 93,32 93,68 50,92 7,68 7,32" stroke="#c0000a" stroke-width="1" fill="none"/>
+      <polygon points="50,20 82,38 82,62 50,80 18,62 18,38" stroke="#6b0005" stroke-width=".5" fill="none" stroke-dasharray="2 5"/>
+    </svg>
+  </div>
+
+  <div class="pending-title">Request Sent</div>
+  <div class="pending-code">// Awaiting admin review</div>
+
+  <div class="pending-divider"></div>
+
+  <div class="pending-box">
+    <div class="pending-msg">
+      Your application has been submitted successfully.<br/>
+      <span>Come back later.</span>
+    </div>
+
+    <div class="pending-warn">
+      <strong>ACCESS RESTRICTED</strong><br/>
+      You cannot access the dashboard or server<br/>
+      until your request is <strong>accepted</strong> or <strong>declined</strong>.<br/><br/>
+      An admin will review your application within<br/>
+      <strong>24 – 72 hours</strong>. Check your DMs for the result.<br/><br/>
+      <span class="blink">█</span> &nbsp;Status: PENDING REVIEW...
+    </div>
+
+    <div class="pending-status-grid">
+      <div class="pstat">
+        <div class="pstat-label">Status</div>
+        <div class="pstat-val">PENDING</div>
+      </div>
+      <div class="pstat">
+        <div class="pstat-label">Submitted</div>
+        <div class="pstat-val" id="pendingTime">--:--</div>
+      </div>
+      <div class="pstat">
+        <div class="pstat-label">Review ETA</div>
+        <div class="pstat-val">72 HRS</div>
+      </div>
+      <div class="pstat">
+        <div class="pstat-label">Access</div>
+        <div class="pstat-val" style="color:var(--red-dim);">LOCKED</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /pendingPage -->
+
+<!-- Three.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ═══════════════════════════════
+   THREE.JS BACKGROUND
+═══════════════════════════════ */
+(function(){
+  const cvs = document.getElementById('bg-canvas');
+  const R = new THREE.WebGLRenderer({ canvas:cvs, antialias:true, alpha:true });
+  R.setPixelRatio(Math.min(devicePixelRatio,2));
+  R.setSize(innerWidth, innerHeight);
+  R.setClearColor(0,0);
+
+  const scene  = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, .1, 100);
+  camera.position.z = 5;
+
+  const mk = (geo, color, opacity, wire=true) =>
+    new THREE.Mesh(new geo, new THREE.MeshBasicMaterial({ color, wireframe:wire, transparent:true, opacity }));
+
+  const ico = mk(function(){ return new THREE.IcosahedronGeometry(1.5,1); }, 0xc0000a, 0.14);
+  ico.position.set(3.6, -.6, -2); scene.add(ico);
+
+  const ico2 = mk(function(){ return new THREE.OctahedronGeometry(.75,0); }, 0xff1a27, 0.1);
+  ico2.position.set(-3.8,1.5,-3); scene.add(ico2);
+
+  // particles
+  const N=200, pos=new Float32Array(N*3), spd=[];
+  for(let i=0;i<N;i++){
+    pos[i*3]=(Math.random()-.5)*20; pos[i*3+1]=(Math.random()-.5)*14; pos[i*3+2]=(Math.random()-.5)*10-2;
+    spd.push({x:(Math.random()-.5)*.0016,y:(Math.random()-.5)*.0016});
+  }
+  const pGeo=new THREE.BufferGeometry();
+  pGeo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  scene.add(new THREE.Points(pGeo,new THREE.PointsMaterial({color:0xc0000a,size:.036,transparent:true,opacity:.45})));
+
+  const tr={x:0,y:0}, cr={x:0,y:0};
+  window.addEventListener('mousemove',e=>{ tr.x=-(e.clientY/innerHeight-.5)*.7; tr.y=(e.clientX/innerWidth-.5)*.9; });
+  window.addEventListener('touchmove',e=>{ tr.x=-(e.touches[0].clientY/innerHeight-.5)*.5; tr.y=(e.touches[0].clientX/innerWidth-.5)*.6; },{passive:true});
+  window.addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); R.setSize(innerWidth,innerHeight); });
+
+  let t=0;
+  (function loop(){
+    requestAnimationFrame(loop); t+=.008;
+    cr.x+=(tr.x-cr.x)*.05; cr.y+=(tr.y-cr.y)*.05;
+    ico.rotation.x=cr.x+t*.14; ico.rotation.y=cr.y+t*.2;
+    ico2.rotation.x=-t*.22; ico2.rotation.y=t*.17;
+    const p=pGeo.attributes.position.array;
+    for(let i=0;i<N;i++){
+      p[i*3]+=spd[i].x; p[i*3+1]+=spd[i].y+Math.sin(t+i)*.0007;
+      if(p[i*3]>10)p[i*3]=-10; if(p[i*3]<-10)p[i*3]=10;
+      if(p[i*3+1]>7)p[i*3+1]=-7; if(p[i*3+1]<-7)p[i*3+1]=7;
+    }
+    pGeo.attributes.position.needsUpdate=true;
+    camera.position.y=Math.sin(t*.38)*.07;
+    R.render(scene,camera);
+  })();
+})();
+
+/* ═══════════════════════════════
+   FILE UPLOAD PREVIEW
+═══════════════════════════════ */
+const killProofInput = document.getElementById('killProof');
+const fileDrop       = document.getElementById('fileDrop');
+const filePreview    = document.getElementById('filePreview');
+const filePreviewImg = document.getElementById('filePreviewImg');
+const filePreviewName= document.getElementById('filePreviewName');
+const fileRemove     = document.getElementById('fileRemove');
+
+function showPreview(file){
+  if(!file || !file.type.startsWith('image/')) return;
+  const url = URL.createObjectURL(file);
+  filePreviewImg.src = url;
+  filePreviewName.textContent = file.name;
+  filePreview.style.display = 'flex';
+}
+
+killProofInput.addEventListener('change', e => {
+  if(e.target.files[0]) showPreview(e.target.files[0]);
+});
+
+fileRemove.addEventListener('click', () => {
+  killProofInput.value = '';
+  filePreview.style.display = 'none';
+  filePreviewImg.src = '';
+});
+
+// Drag & drop
+fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('dragover'); });
+fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('dragover'));
+fileDrop.addEventListener('drop', e => {
+  e.preventDefault(); fileDrop.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if(file){ killProofInput.files = e.dataTransfer.files; showPreview(file); }
+});
+
+/* ═══════════════════════════════
+   FORM VALIDATION & SUBMIT
+═══════════════════════════════ */
+function markInvalid(el){
+  el.classList.remove('invalid');
+  void el.offsetWidth;
+  el.classList.add('invalid');
+  setTimeout(()=>el.classList.remove('invalid'),700);
+}
+
+function submitForm(){
+  const username  = document.getElementById('rblxUsername').value.trim();
+  const kills     = document.getElementById('tsbKills').value.trim();
+  const skills    = document.getElementById('skillsDesc').value.trim();
+  const charVal   = document.querySelector('input[name="mainChar"]:checked');
+  const proof     = killProofInput.files[0];
+  let valid = true;
+
+  if(!username){ markInvalid(document.getElementById('rblxUsername')); valid=false; }
+  if(!kills)   { markInvalid(document.getElementById('tsbKills'));     valid=false; }
+  if(!skills)  { markInvalid(document.getElementById('skillsDesc'));   valid=false; }
+  if(!charVal) {
+    document.querySelectorAll('.char-label').forEach(l=>{ l.classList.add('invalid-select'); setTimeout(()=>l.classList.remove('invalid-select'),700); });
+    valid=false;
+  }
+  if(!proof){ fileDrop.style.borderColor='var(--red-bright)'; setTimeout(()=>fileDrop.style.borderColor='',700); valid=false; }
+
+  if(!valid) return;
+
+  // Sending state
+  const btn = document.getElementById('submitBtn');
+  btn.classList.add('sending');
+  btn.querySelector('.btn-text').textContent = 'Sending...';
+
+  // Simulate network delay then show pending
+  setTimeout(()=>{
+    // Save pending flag to localStorage so user stays locked
+    localStorage.setItem('tryoutPending', 'true');
+    localStorage.setItem('tryoutTime', new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+    showPending();
+  }, 2200);
+}
+
+function showPending(){
+  const t = localStorage.getItem('tryoutTime') || '--:--';
+  document.getElementById('pendingTime').textContent = t;
+  document.getElementById('pendingPage').classList.add('show');
+}
+
+/* ═══════════════════════════════
+   CHECK IF ALREADY PENDING
+   (blocks re-access until cleared)
+═══════════════════════════════ */
+window.addEventListener('DOMContentLoaded', ()=>{
+  if(localStorage.getItem('tryoutPending') === 'true'){
+    showPending();
+  }
+});
+</script>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="ui-bridge.js"></script>
+</body>
+</html>

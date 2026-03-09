@@ -8,8 +8,8 @@ let canPostReadonly = false;
 const dmCache = new Map();
 
 const container = document.getElementById('channelMessages');
-const layout = document.getElementById('serverLayout');
-const panel = document.getElementById('channelPanel');
+const layout = document.getElementById('app') || document.body;
+const panel = document.getElementById('messagePage') || document.getElementById('channelPanel');
 const dmBox = document.getElementById('dmMessages');
 const userModal = document.getElementById('userProfileModal');
 const dmForm = document.getElementById('dmForm');
@@ -83,17 +83,17 @@ function openUserModal(userData) {
 }
 
 function setActiveChannel(channel) {
-  document.querySelectorAll('.channel').forEach((btn) => btn.classList.toggle('active', btn.dataset.channel === channel));
+  document.querySelectorAll('.sidebar-channel, .channel').forEach((btn) => btn.classList.toggle('active', btn.dataset.channel === channel));
 }
 
 function openChannel(ch) {
   currentChannel = ch;
-  document.getElementById('currentChannel').textContent = `# ${ch}`;
+  const nameEl=document.getElementById('msgChannelName') || document.getElementById('currentChannel'); if(nameEl) nameEl.textContent = ch;
   container.innerHTML = '';
   setActiveChannel(ch);
   updateFormVisibility(ch);
   panel.classList.remove('hidden');
-  if (window.innerWidth <= 780) layout.classList.add('mobile-channel-open');
+  layout.classList.add('mobile-channel-open');
   socket.emit('getChannelMessages', ch);
 }
 
@@ -104,15 +104,11 @@ function closeChannel() {
   }
 }
 
-document.getElementById('closeChannelView').addEventListener('click', closeChannel);
-document.getElementById('serverMenuBtn').addEventListener('click', () => {
-  document.getElementById('serverMiniMenu').classList.toggle('hidden-left');
-});
+const closeBtn=document.getElementById('closeChannelView') || document.getElementById('backToHome'); if (closeBtn) closeBtn.addEventListener('click', closeChannel);
+const menuBtn=document.getElementById('serverMenuBtn'); if (menuBtn) menuBtn.addEventListener('click', () => { const m=document.getElementById('serverMiniMenu'); if(m)m.classList.toggle('hidden-left'); });
 document.getElementById('closeUserModal').addEventListener('click', () => userModal.classList.add('hidden'));
 
-document.querySelectorAll('.channel').forEach((btn) => {
-  btn.onclick = () => openChannel(btn.dataset.channel);
-});
+document.querySelectorAll('.sidebar-channel, .channel').forEach((btn) => { btn.onclick = () => openChannel(btn.dataset.channel); });
 
 container.addEventListener('click', (e) => {
   const btn = e.target.closest('.profile-link');
@@ -199,4 +195,4 @@ document.getElementById('dmForm').addEventListener('submit', (e) => {
 });
 
 socket.on('channelError', (msg) => alert(msg));
-if (window.innerWidth > 780) openChannel(currentChannel);
+openChannel(currentChannel);
