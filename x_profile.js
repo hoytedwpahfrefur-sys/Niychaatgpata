@@ -21,5 +21,5 @@ profileForm.addEventListener('submit', (e) => {
     pfp: pfpData || existing.pfp || 'https://placehold.co/80x80/red/white?text=PFP'
   };
   localStorage.setItem('clanProfile', JSON.stringify(profile));
-  window.location.href = 'Dashboard.html';
+  window.location.href = 'x_Dashboard.html';
 });
