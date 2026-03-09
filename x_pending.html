@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Request Pending</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --red:#c0000a;--red-bright:#ff1a27;--red-dim:#6b0005;
+  --black:#060606;--surface:#0d0d0d;--panel:#111;--raised:#161616;
+  --text:#ddd5d5;--text-dim:#5a4a4a;
+  --border:rgba(192,0,10,0.22);--border-sub:rgba(255,255,255,0.04);
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif;cursor:default;}
+
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,0.08) 3px,rgba(0,0,0,0.08) 4px);pointer-events:none;z-index:8000;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(0,0,0,0.95)100%);pointer-events:none;z-index:7999;}
+
+.noise{position:fixed;inset:0;pointer-events:none;z-index:11;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:160px;}
+
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
+::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-thumb{background:var(--red-dim);}
+
+/* corners */
+.corner{position:fixed;width:50px;height:50px;z-index:50;pointer-events:none;}
+.corner::before{content:'';position:absolute;width:100%;height:1px;background:var(--red);}
+.corner::after{content:'';position:absolute;width:1px;height:100%;background:var(--red);}
+.c-tl{top:20px;left:20px;}.c-tr{top:20px;right:20px;transform:scaleX(-1);}
+.c-bl{bottom:20px;left:20px;transform:scaleY(-1);}.c-br{bottom:20px;right:20px;transform:scale(-1);}
+
+/* HUD */
+.hud{width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 30px;position:relative;z-index:20;}
+.hud-top{border-bottom:1px solid var(--border);background:linear-gradient(to bottom,rgba(6,6,6,.9),transparent);flex-shrink:0;}
+.hud-bot{border-top:1px solid var(--border);background:linear-gradient(to top,rgba(6,6,6,.9),transparent);flex-shrink:0;margin-top:auto;}
+.hud-txt{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--red);text-transform:uppercase;}
+.hud-dim{color:var(--text-dim);}
+.hud-row{display:flex;align-items:center;gap:8px;}
+.dot{width:6px;height:6px;border-radius:50%;background:#ffaa00;box-shadow:0 0 8px #ffaa00;animation:dp 1.8s ease-in-out infinite;}
+@keyframes dp{0%,100%{opacity:1;}50%{opacity:.2;}}
+.scan-bar{width:130px;height:1px;background:rgba(192,0,10,.1);position:relative;overflow:hidden;}
+.scan-fill{position:absolute;top:0;left:-60%;width:60%;height:100%;background:linear-gradient(to right,transparent,var(--red-bright),transparent);animation:sm 2.6s ease-in-out infinite;}
+@keyframes sm{from{left:-60%;}to{left:110%;}}
+
+/* layout */
+.page{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;}
+
+.hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:0;}
+
+/* ambient rings */
+.bg-ring{position:absolute;border-radius:50%;border:1px solid rgba(192,0,10,.06);pointer-events:none;}
+.r1{width:640px;height:640px;animation:rp 7s ease-in-out infinite;}
+.r2{width:440px;height:440px;border-color:rgba(192,0,10,.09);animation:rp 7s ease-in-out 2.2s infinite;}
+.r3{width:270px;height:270px;border-color:rgba(192,0,10,.13);animation:rp 7s ease-in-out 4.4s infinite;}
+@keyframes rp{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.05);opacity:.4;}}
+
+/* CLOCK */
+.clock-wrap{position:relative;width:200px;height:200px;margin-bottom:32px;animation:clkIn .9s cubic-bezier(.16,1,.3,1) .1s both;}
+@keyframes clkIn{from{opacity:0;transform:scale(.8);}to{opacity:1;transform:scale(1);}}
+
+.clock-face{
+  width:200px;height:200px;border-radius:50%;
+  border:1px solid var(--border);
+  background:radial-gradient(circle,rgba(192,0,10,.06) 0%,transparent 70%);
+  position:relative;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 40px rgba(192,0,10,.08),inset 0 0 30px rgba(0,0,0,.5);
+}
+.clock-face::before{
+  content:'';position:absolute;inset:-8px;border-radius:50%;
+  border:1px solid rgba(192,0,10,.1);
+  animation:clockring 8s linear infinite;
+}
+.clock-face::after{
+  content:'';position:absolute;inset:-18px;border-radius:50%;
+  border:1px dashed rgba(192,0,10,.07);
+  animation:clockring 16s linear infinite reverse;
+}
+@keyframes clockring{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+
+/* tick marks */
+.tick-marks{position:absolute;inset:0;border-radius:50%;}
+.tick{position:absolute;top:50%;left:50%;transform-origin:0 0;}
+
+/* hands */
+.hand{position:absolute;bottom:50%;left:50%;transform-origin:50% 100%;border-radius:4px;}
+.hand-hour  {width:3px;height:52px;background:var(--red);margin-left:-1.5px;box-shadow:0 0 8px var(--red);}
+.hand-minute{width:2px;height:72px;background:var(--text-dim);margin-left:-1px;}
+.hand-second{width:1px;height:80px;background:var(--red-bright);margin-left:-.5px;box-shadow:0 0 6px var(--red-bright);}
+.clock-center{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--red-bright);box-shadow:0 0 10px var(--red-bright);z-index:5;}
+
+.clock-label{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:4px;color:var(--text-dim);text-transform:uppercase;margin-top:2px;}
+
+/* digital clock below */
+.digital-time{
+  font-family:'Share Tech Mono',monospace;
+  font-size:clamp(28px,6vw,44px);letter-spacing:8px;
+  color:var(--text);margin-top:20px;
+  animation:fadeUp .6s ease .4s both;
+  position:relative;
+}
+.digital-time::after{content:'';display:block;height:1px;background:linear-gradient(to right,transparent,var(--red),transparent);margin-top:8px;animation:divexp .8s ease .7s both;width:0;}
+@keyframes divexp{to{width:100%;}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+
+/* Status badge */
+.status-badge{
+  display:flex;align-items:center;gap:10px;
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:5px;
+  color:#ffaa00;text-transform:uppercase;
+  border:1px solid rgba(255,170,0,.3);padding:5px 16px;
+  margin-bottom:24px;
+  animation:fadeUp .5s ease .15s both;
+  animation-name:fadeUp,badgeglow;animation-duration:.5s,2.5s;animation-delay:.15s,1s;animation-fill-mode:both,none;animation-iteration-count:1,infinite;
+}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:#ffaa00;box-shadow:0 0 8px #ffaa00;animation:dp 1.8s ease-in-out infinite;}
+@keyframes badgeglow{0%,100%{border-color:rgba(255,170,0,.3);}50%{border-color:rgba(255,170,0,.8);}}
+
+/* Title + sub */
+.pending-title{font-family:'Bebas Neue',cursive;font-size:clamp(30px,6vw,50px);letter-spacing:8px;color:var(--text);text-align:center;margin-top:22px;animation:fadeUp .6s ease .5s both;}
+.pending-sub{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:4px;color:var(--red);text-transform:uppercase;margin-top:8px;text-align:center;animation:fadeUp .6s ease .6s both;}
+
+/* Info box */
+.info-box{
+  background:var(--panel);border:1px solid var(--border);
+  max-width:480px;width:100%;padding:22px 24px;
+  position:relative;margin-top:24px;
+  animation:fadeUp .6s ease .7s both;
+  text-align:center;
+}
+.info-box::before{content:'';position:absolute;top:-1px;left:-1px;width:14px;height:14px;border-top:2px solid var(--red);border-left:2px solid var(--red);}
+.info-box::after {content:'';position:absolute;bottom:-1px;right:-1px;width:14px;height:14px;border-bottom:2px solid var(--red);border-right:2px solid var(--red);}
+
+.info-msg{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:600;letter-spacing:1px;color:var(--text);line-height:1.7;margin-bottom:14px;}
+.info-msg span{color:var(--red-bright);}
+
+.info-warn{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;line-height:2;border-top:1px solid var(--border-sub);padding-top:12px;}
+.info-warn strong{color:var(--red);}
+
+/* Stat row */
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border-sub);margin-top:20px;}
+.stat{background:var(--raised);padding:12px 10px;text-align:center;}
+.stat-label{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;}
+.stat-val  {font-family:'Bebas Neue',cursive;font-size:20px;letter-spacing:2px;color:var(--red-bright);margin-top:4px;line-height:1;}
+
+/* blink */
+.blink{animation:bk 1.2s step-end infinite;}
+@keyframes bk{0%,100%{opacity:1;}50%{opacity:0;}}
+
+@media(max-width:480px){
+  .r1{width:320px;height:320px;}.r2{width:220px;height:220px;}.r3{display:none;}
+  .clock-wrap{width:160px;height:160px;}.clock-face{width:160px;height:160px;}
+  .hand-hour{height:42px;}.hand-minute{height:58px;}.hand-second{height:64px;}
+  .stat-row{grid-template-columns:1fr;}
+  .hud{padding:12px 18px;}
+}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<canvas id="bg-canvas"></canvas>
+
+<div class="corner c-tl"></div>
+<div class="corner c-tr"></div>
+<div class="corner c-bl"></div>
+<div class="corner c-br"></div>
+
+<div class="page">
+  <div class="hud hud-top">
+    <span class="hud-txt">SYS://WRAITH-OS &nbsp; v4.0.1</span>
+    <div class="hud-row"><div class="dot"></div><span class="hud-txt" style="color:#ffaa00;">REQUEST UNDER REVIEW</span></div>
+    <span class="hud-txt hud-dim" id="hudClock">--:--:--</span>
+  </div>
+
+  <div class="hero">
+    <div class="bg-ring r1"></div>
+    <div class="bg-ring r2"></div>
+    <div class="bg-ring r3"></div>
+
+    <div class="status-badge"><div class="badge-dot"></div><i class="fa-solid fa-clock"></i> STATUS: PENDING</div>
+
+    <!-- Analog Clock -->
+    <div class="clock-wrap">
+      <div class="clock-face">
+        <canvas id="tickCanvas" width="200" height="200" style="position:absolute;inset:0;border-radius:50%;"></canvas>
+        <div class="hand hand-hour"   id="hHour"  ></div>
+        <div class="hand hand-minute" id="hMinute"></div>
+        <div class="hand hand-second" id="hSecond"></div>
+        <div class="clock-center"></div>
+      </div>
+    </div>
+    <div class="clock-label">// Current Time</div>
+
+    <div class="digital-time" id="digitalTime">--:--:--</div>
+
+    <div class="pending-title">Request Sent</div>
+    <div class="pending-sub">// Awaiting admin review — stand by</div>
+
+    <div class="info-box">
+      <div class="info-msg">
+        Your application has been received.<br/>
+        <span>You cannot access the website</span> until an admin reviews your request.
+      </div>
+      <div class="info-warn">
+        <strong>ACCESS RESTRICTED</strong><br/>
+        DO NOT CLOSE OR REFRESH THIS PAGE<br/>
+        REVIEW TIME: <strong>24 – 72 HOURS</strong><br/>
+        CHECK YOUR DMs FOR THE RESULT<br/><br/>
+        <span class="blink">█</span> &nbsp;MONITORING REQUEST...
+      </div>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-label">Status</div><div class="stat-val">PENDING</div></div>
+        <div class="stat"><div class="stat-label">ETA</div><div class="stat-val">72 HRS</div></div>
+        <div class="stat"><div class="stat-label">Access</div><div class="stat-val" style="color:var(--red-dim);">LOCKED</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hud hud-bot">
+    <span class="hud-txt hud-dim">REQUEST ID: <span id="reqId">----</span></span>
+    <div class="scan-bar"><div class="scan-fill"></div></div>
+    <span class="hud-txt hud-dim">ACCESS: LOCKED</span>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* THREE.JS */
+(function(){
+  const cvs=document.getElementById('bg-canvas');
+  const R=new THREE.WebGLRenderer({canvas:cvs,antialias:true,alpha:true});
+  R.setPixelRatio(Math.min(devicePixelRatio,2));R.setSize(innerWidth,innerHeight);R.setClearColor(0,0);
+  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,100);
+  camera.position.z=5;
+  const mk=(G,a,c,o,w=true)=>{ const m=new THREE.Mesh(new G(...a),new THREE.MeshBasicMaterial({color:c,wireframe:w,transparent:true,opacity:o}));return m;};
+  const ico=mk(THREE.IcosahedronGeometry,[1.8,1],0xc0000a,.1);ico.position.set(3.5,-.5,-2.5);scene.add(ico);
+  const oct=mk(THREE.OctahedronGeometry,[.8,0],0xff1a27,.08);oct.position.set(-3.8,1.6,-3);scene.add(oct);
+  const N=240,pos=new Float32Array(N*3),spd=[];
+  for(let i=0;i<N;i++){pos[i*3]=(Math.random()-.5)*22;pos[i*3+1]=(Math.random()-.5)*16;pos[i*3+2]=(Math.random()-.5)*10-2;spd.push({x:(Math.random()-.5)*.0016,y:(Math.random()-.5)*.0014});}
+  const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  scene.add(new THREE.Points(pg,new THREE.PointsMaterial({color:0xc0000a,size:.036,transparent:true,opacity:.35})));
+  window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);});
+  let t=0;(function loop(){requestAnimationFrame(loop);t+=.007;
+    ico.rotation.x=t*.13;ico.rotation.y=t*.18;oct.rotation.x=-t*.2;oct.rotation.y=t*.16;
+    const p=pg.attributes.position.array;
+    for(let i=0;i<N;i++){p[i*3]+=spd[i].x;p[i*3+1]+=spd[i].y+Math.sin(t+i)*.0006;if(p[i*3]>11)p[i*3]=-11;if(p[i*3]<-11)p[i*3]=11;if(p[i*3+1]>8)p[i*3+1]=-8;if(p[i*3+1]<-8)p[i*3+1]=8;}
+    pg.attributes.position.needsUpdate=true;R.render(scene,camera);})();
+})();
+
+/* CLOCK */
+function updateClock(){
+  const now=new Date();
+  const h=now.getHours(),m=now.getMinutes(),s=now.getSeconds();
+  const ms=now.getMilliseconds();
+  const secDeg   = (s+ms/1000)*6-90;
+  const minDeg   = (m+s/60)*6-90;
+  const hourDeg  = (h%12+m/60)*30-90;
+  document.getElementById('hSecond').style.transform=`rotate(${secDeg+90}deg)`;
+  document.getElementById('hMinute').style.transform=`rotate(${minDeg+90}deg)`;
+  document.getElementById('hHour'  ).style.transform=`rotate(${hourDeg+90}deg)`;
+  const ts=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  document.getElementById('digitalTime').textContent=ts;
+  document.getElementById('hudClock').textContent=ts;
+}
+setInterval(updateClock,50); updateClock();
+
+/* Tick marks on canvas */
+(function drawTicks(){
+  const c=document.getElementById('tickCanvas'),ctx=c.getContext('2d');
+  const cx=100,cy=100,r=90;
+  ctx.clearRect(0,0,200,200);
+  for(let i=0;i<60;i++){
+    const a=i*6*Math.PI/180;
+    const isMaj=i%5===0;
+    const len=isMaj?12:5;
+    const x1=cx+Math.cos(a)*(r-len),y1=cy+Math.sin(a)*(r-len);
+    const x2=cx+Math.cos(a)*r,y2=cy+Math.sin(a)*r;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);
+    ctx.strokeStyle=isMaj?'rgba(192,0,10,0.6)':'rgba(90,74,74,0.4)';
+    ctx.lineWidth=isMaj?1.5:.8;ctx.stroke();
+  }
+})();
+
+/* Random request ID */
+document.getElementById('reqId').textContent=Math.random().toString(36).slice(2,10).toUpperCase();
+</script>
+<script src="x_ui-bridge.js"></script>
+</body>
+</html>
