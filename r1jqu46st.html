@@ -1,8 +1,0 @@
-<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Request Panel</title>
-<style>body{font-family:Arial;background:#0b0b0b;color:#eee;padding:20px}.card{border:1px solid #400;padding:12px;margin:10px 0;background:#151515}.row{display:flex;gap:8px;align-items:center}.btn{padding:6px 10px;border:1px solid #900;background:#220;color:#fff;cursor:pointer}</style></head>
-<body><h1>Request Panel</h1><div id='list'></div>
-<script>
-async function load(){const res=await fetch('/api/applications');const data=await res.json();const list=document.getElementById('list');list.innerHTML='';data.forEach(r=>{const d=document.createElement('div');d.className='card';d.innerHTML=`<div><b>${r.username}</b> (${r.status})</div><div>Kills: ${r.kills||0}</div><div>Main: ${r.mainCharacter||'-'}</div><div>${r.skills||''}</div><div class='row'><button class='btn a'>Accept</button><button class='btn d'>Decline</button></div>`;d.querySelector('.a').onclick=()=>decide(r.username,'accepted');d.querySelector('.d').onclick=()=>decide(r.username,'declined');list.appendChild(d);});}
-async function decide(username,status){await fetch('/api/applications/'+encodeURIComponent(username)+'/decision',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({status})});load();}
-load();
-</script></body></html>
