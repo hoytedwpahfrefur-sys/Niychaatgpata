@@ -7,17 +7,23 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+app.use(express.json({ limit: '5mb' }));
 app.use(express.static(__dirname));
 
-app.get('/dashboard.html', (_req, res) => res.sendFile(path.join(__dirname, 'Dashboard.html')));
-app.get('/server.html', (_req, res) => res.sendFile(path.join(__dirname, 'Server.html')));
-app.get('/admin.html', (_req, res) => res.sendFile(path.join(__dirname, 'hahahaiamafmjnyourbad6677.html')));
-app.get('/ticket.html', (_req, res) => res.sendFile(path.join(__dirname, 't1c€Tp0n@l.html')));
+app.get('/x_dashboard.html', (_req, res) => res.sendFile(path.join(__dirname, 'x_Dashboard.html')));
+app.get('/x_Dashboard.html', (_req, res) => res.sendFile(path.join(__dirname, 'x_Dashboard.html')));
+app.get('/x_server-main.html', (_req, res) => res.sendFile(path.join(__dirname, 'x_server-main.html')));
+app.get('/x_chat-main.html', (_req, res) => res.sendFile(path.join(__dirname, 'x_chat-main.html')));
+app.get('/x_r1jqu46st.html', (_req, res) => res.sendFile(path.join(__dirname, 'x_r1jqu46st.html')));
+app.get('/x_declined.html', (_req, res) => res.sendFile(path.join(__dirname, 'x_declined.html')));
+app.get('/x_admin.html', (_req, res) => res.sendFile(path.join(__dirname, 'x_hahahaiamafmjnyourbad6677.html')));
+app.get('/x_ticket.html', (_req, res) => res.sendFile(path.join(__dirname, 'x_t1c€Tp0n@l.html')));
 
 const users = new Map();
 const channels = new Map();
 const tickets = new Map();
 const directMessages = new Map();
+const applications = new Map();
 const readonly = new Set(['rules', 'announcement', 'sub_announcement', 'giveaway', 'main_lineup', 'sub_lineup', 'tryouts', 'tryouts_result']);
 
 function getUser(username) {
@@ -28,6 +34,35 @@ function getUser(username) {
 }
 
 
+
+
+app.post('/api/applications', (req, res) => {
+  const { username, kills, skills, mainCharacter, submittedAt, proofImage, proofName, formData } = req.body || {};
+  if (!username) return res.status(400).json({ error: 'username required' });
+  applications.set(username, { username, kills: Number(kills || 0), skills: skills || '', mainCharacter: mainCharacter || '', proofImage: proofImage || '', proofName: proofName || '', formData: formData || {}, submittedAt: submittedAt || Date.now(), status: 'pending' });
+  const user = getUser(username);
+  users.set(username, { ...user, role: 'Pending' });
+  res.json({ ok: true });
+});
+
+app.get('/api/applications', (_req, res) => res.json([...applications.values()]));
+
+app.get('/api/applications/:username', (req, res) => {
+  const appReq = applications.get(req.params.username);
+  if (!appReq) return res.json({ status: 'none' });
+  res.json(appReq);
+});
+
+app.post('/api/applications/:username/decision', (req, res) => {
+  const { status } = req.body || {};
+  if (!['accepted', 'declined', 'pending'].includes(status)) return res.status(400).json({ error: 'invalid status' });
+  const username = req.params.username;
+  const current = applications.get(username) || { username };
+  applications.set(username, { ...current, status, decidedAt: Date.now() });
+  const user = getUser(username);
+  users.set(username, { ...user, role: status === 'accepted' ? 'Member' : 'Pending' });
+  res.json({ ok: true });
+});
 
 function getDmKey(a, b) {
   return [a, b].sort().join('::');
@@ -141,4 +176,4 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Clan app running on http://localhost:${PORT}`));
 
-app.get('/72&#72--6.html', (_req, res) => res.sendFile(path.join(__dirname, 'hahahaiamafmjnyourbad6677.html')));
+app.get('/x_72&#72--6.html', (_req, res) => res.sendFile(path.join(__dirname, 'x_hahahaiamafmjnyourbad6677.html')));

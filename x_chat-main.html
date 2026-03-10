@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Direct Messages — Wraith</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --red:#c0000a;--red-bright:#ff1a27;--red-dim:#6b0005;
+  --red-glow:rgba(192,0,10,0.14);
+  --black:#060606;--surface:#0d0d0d;--panel:#0f0f0f;
+  --raised:#161616;--card:#1a1a1a;
+  --text:#ddd5d5;--text-dim:#5a4a4a;--text-mid:#8a7a7a;
+  --border:rgba(192,0,10,0.22);--border-sub:rgba(255,255,255,0.05);
+  --topbar-h:52px;
+  --admin-gold:#e8a020;
+}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif;}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,0.07) 3px,rgba(0,0,0,0.07) 4px);}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--red-dim);}
+
+/* ── TOPBAR ── */
+.topbar{
+  position:fixed;top:0;left:0;right:0;height:var(--topbar-h);
+  background:rgba(8,8,8,0.98);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;padding:0 16px;
+  z-index:300;
+}
+.topbar-back{
+  display:none;background:transparent;border:1px solid var(--border);
+  color:var(--text-dim);width:32px;height:32px;
+  align-items:center;justify-content:center;cursor:pointer;font-size:13px;
+  transition:color .2s,border-color .2s;flex-shrink:0;
+}
+.topbar-back.show{display:flex;}
+.topbar-back:hover{color:var(--red-bright);border-color:var(--red);}
+.topbar-logo{font-family:'Bebas Neue',cursive;font-size:18px;letter-spacing:5px;color:var(--text);flex:1;}
+.topbar-logo span{color:var(--red);}
+.topbar-title{font-family:'Bebas Neue',cursive;font-size:16px;letter-spacing:3px;color:var(--text);flex:1;display:none;}
+.topbar-title.show{display:block;}
+.topbar-logo.hide{display:none;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--red-bright);box-shadow:0 0 6px var(--red-bright);animation:dp 2s ease-in-out infinite;}
+@keyframes dp{0%,100%{opacity:1;}50%{opacity:.2;}}
+.topbar-status{display:flex;align-items:center;gap:6px;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--text-dim);}
+.icon-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;flex-shrink:0;transition:color .2s,border-color .2s,background .2s;text-decoration:none;}
+.icon-btn:hover{color:var(--red-bright);border-color:var(--red);background:var(--red-glow);}
+
+/* ── LAYOUT SHELL ── */
+.shell{
+  display:flex;height:100vh;padding-top:var(--topbar-h);
+  overflow:hidden;
+}
+
+/* ══════════════════════════════
+   DM LIST PANEL
+══════════════════════════════ */
+.dm-panel{
+  width:300px;flex-shrink:0;
+  background:rgba(10,10,10,0.98);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  transition:transform .28s cubic-bezier(.4,0,.2,1);
+}
+.dm-panel-header{
+  padding:14px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0;
+  display:flex;align-items:center;gap:10px;
+}
+.dm-panel-title{font-family:'Bebas Neue',cursive;font-size:16px;letter-spacing:4px;color:var(--text);flex:1;}
+.dm-panel-title i{font-size:13px;color:var(--red);margin-right:6px;}
+.dm-search{padding:10px 12px;border-bottom:1px solid var(--border-sub);flex-shrink:0;}
+.dm-search input{
+  width:100%;background:var(--raised);border:1px solid var(--border-sub);
+  color:var(--text);font-family:'Share Tech Mono',monospace;font-size:10px;
+  letter-spacing:1px;padding:8px 12px;outline:none;
+  transition:border-color .2s,background .2s;
+}
+.dm-search input::placeholder{color:var(--text-dim);}
+.dm-search input:focus{border-color:var(--border);background:rgba(192,0,10,.05);}
+.dm-list{flex:1;overflow-y:auto;padding:6px 0;}
+
+/* Section label */
+.sec-label{
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:4px;
+  color:var(--text-dim);text-transform:uppercase;
+  padding:10px 14px 5px;user-select:none;
+  display:flex;align-items:center;gap:8px;
+}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border-sub);}
+.sec-label i{font-size:8px;}
+
+/* ADMIN PINNED */
+.admin-pin{
+  margin:5px 10px 3px;
+  background:rgba(232,160,32,0.05);border:1px solid rgba(232,160,32,0.2);
+  cursor:pointer;position:relative;
+  transition:background .2s,border-color .2s;
+  animation:fi .35s ease both;
+}
+@keyframes fi{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:translateX(0);}}
+.admin-pin::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--admin-gold);}
+.admin-pin:hover,.admin-pin.active{background:rgba(232,160,32,.1);border-color:rgba(232,160,32,.45);}
+.pin-tag{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:3px;color:rgba(232,160,32,.5);padding:4px 14px 0;display:flex;align-items:center;gap:5px;}
+.pin-tag i{font-size:7px;}
+.admin-inner{display:flex;align-items:center;gap:10px;padding:9px 12px 9px 14px;}
+.admin-av{
+  width:38px;height:38px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--admin-gold),rgba(232,160,32,.3));
+  display:flex;align-items:center;justify-content:center;
+  font-size:15px;color:var(--black);
+  border:1px solid rgba(232,160,32,.3);position:relative;
+}
+.admin-av .av-badge{position:absolute;bottom:-3px;right:-3px;width:13px;height:13px;background:var(--admin-gold);display:flex;align-items:center;justify-content:center;font-size:6px;color:var(--black);}
+.admin-body{flex:1;min-width:0;}
+.admin-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:2px;color:var(--admin-gold);display:flex;align-items:center;gap:6px;}
+.admin-tag-badge{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:1px;background:rgba(232,160,32,.2);color:var(--admin-gold);padding:1px 5px;border:1px solid rgba(232,160,32,.25);}
+.admin-preview{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.unread-badge{background:var(--admin-gold);color:var(--black);font-family:'Share Tech Mono',monospace;font-size:8px;font-weight:700;border-radius:2px;padding:1px 5px;flex-shrink:0;}
+
+/* DM ITEM */
+.dm-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;cursor:pointer;
+  border-left:2px solid transparent;
+  transition:background .15s,border-left-color .15s;
+  animation:fi .35s ease both;
+}
+.dm-item:hover{background:rgba(255,255,255,.025);border-left-color:var(--red-dim);}
+.dm-item.active{background:rgba(192,0,10,.08);border-left-color:var(--red-bright);}
+.dm-av{
+  width:38px;height:38px;flex-shrink:0;
+  background:var(--raised);border:1px solid var(--border-sub);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',cursive;font-size:16px;color:var(--text-dim);
+  position:relative;transition:border-color .2s;
+}
+.dm-item.active .dm-av,.dm-item:hover .dm-av{border-color:var(--red-dim);}
+.status-pip{position:absolute;bottom:-2px;right:-2px;width:11px;height:11px;border-radius:50%;border:2px solid var(--panel);}
+.status-pip.online{background:#2ecc71;box-shadow:0 0 5px #2ecc71;}
+.status-pip.away{background:#f39c12;}
+.status-pip.offline{background:var(--text-dim);}
+.dm-body{flex:1;min-width:0;}
+.dm-name{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dm-preview{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dm-item.has-unread .dm-name{color:#fff;}
+.dm-item.has-unread .dm-preview{color:var(--text-mid);}
+.dm-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+.dm-time{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim);}
+.dm-badge{background:var(--red);color:#fff;font-family:'Share Tech Mono',monospace;font-size:8px;border-radius:2px;padding:1px 5px;}
+
+/* ══════════════════════════════
+   CHAT PANEL
+══════════════════════════════ */
+.chat-panel{
+  flex:1;display:flex;flex-direction:column;min-width:0;
+  background:rgba(7,7,7,.97);
+}
+
+/* Empty */
+.chat-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+.chat-empty-icon{font-size:32px;color:var(--red-dim);}
+.chat-empty-title{font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:6px;color:var(--text);}
+.chat-empty-sub{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;text-align:center;line-height:1.8;}
+
+/* Chat header */
+.chat-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:11px 16px;flex-shrink:0;
+  background:rgba(10,10,10,.98);border-bottom:1px solid var(--border);
+}
+.chat-head-left{display:flex;align-items:center;gap:10px;}
+.chat-head-av{
+  width:34px;height:34px;border:1px solid var(--border);
+  background:var(--raised);display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',cursive;font-size:14px;color:var(--text-dim);flex-shrink:0;
+}
+.chat-head-av.adm{border-color:rgba(232,160,32,.4);background:rgba(232,160,32,.06);font-size:13px;color:var(--admin-gold);}
+.chat-head-name{font-family:'Bebas Neue',cursive;font-size:16px;letter-spacing:4px;color:var(--text);}
+.chat-head-name.adm{color:var(--admin-gold);}
+.chat-head-status{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--text-dim);margin-top:1px;}
+.chat-head-status.online{color:#2ecc71;}
+.chat-head-right{display:flex;gap:6px;}
+
+/* Scan bar */
+.scan-bar{height:1px;position:relative;overflow:hidden;flex-shrink:0;background:rgba(192,0,10,.07);}
+.scan-fill{position:absolute;top:0;left:-60%;width:60%;height:100%;background:linear-gradient(to right,transparent,var(--red-bright),transparent);animation:sm 2.8s ease-in-out infinite;}
+@keyframes sm{from{left:-60%;}to{left:110%;}}
+
+/* Pinned banner */
+.pinned-banner{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 16px;
+  background:rgba(232,160,32,.05);border-bottom:1px solid rgba(232,160,32,.12);
+  border-left:3px solid var(--admin-gold);
+  flex-shrink:0;
+}
+.pinned-banner i{font-size:10px;color:var(--admin-gold);flex-shrink:0;}
+.pinned-banner-text{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;color:rgba(232,160,32,.75);}
+
+/* Messages */
+.msgs{flex:1;overflow-y:auto;padding:14px 0;display:flex;flex-direction:column;gap:0;}
+
+/* Date separator */
+.date-sep{display:flex;align-items:center;gap:10px;padding:10px 16px;margin:4px 0;}
+.date-sep-line{flex:1;height:1px;background:var(--border-sub);}
+.date-sep-label{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:3px;color:var(--text-dim);white-space:nowrap;}
+
+/* Message group */
+.msg-grp{display:flex;gap:10px;padding:5px 16px;transition:background .12s;position:relative;}
+.msg-grp:hover{background:rgba(255,255,255,.012);}
+.msg-grp:hover .msg-hover-time{opacity:1;}
+.msg-av{
+  width:34px;height:34px;flex-shrink:0;margin-top:2px;
+  background:var(--raised);border:1px solid var(--border-sub);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',cursive;font-size:14px;color:var(--text-dim);
+}
+.msg-av.adm{border-color:rgba(232,160,32,.25);background:rgba(232,160,32,.05);color:var(--admin-gold);}
+.msg-av.me{border-color:rgba(192,0,10,.25);background:rgba(192,0,10,.06);color:var(--red);}
+.msg-content{flex:1;min-width:0;}
+.msg-header{display:flex;align-items:baseline;gap:10px;margin-bottom:3px;}
+.msg-author{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;color:var(--text);}
+.msg-author.adm{color:var(--admin-gold);}
+.msg-author.me{color:var(--red-bright);}
+.msg-author-tag{font-family:'Share Tech Mono',monospace;font-size:7px;background:rgba(232,160,32,.15);color:var(--admin-gold);padding:1px 5px;border:1px solid rgba(232,160,32,.2);}
+.msg-ts{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--text-dim);}
+.msg-text{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:500;letter-spacing:.3px;color:var(--text);line-height:1.55;word-break:break-word;}
+.msg-text.adm{color:rgba(232,160,32,.9);}
+
+/* Continued (grouped) message */
+.msg-cont{padding:1px 16px 1px calc(16px + 34px + 10px);transition:background .12s;position:relative;}
+.msg-cont:hover{background:rgba(255,255,255,.012);}
+.msg-cont:hover .msg-hover-time{opacity:1;}
+.msg-hover-time{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text-dim);opacity:0;transition:opacity .15s;width:34px;text-align:center;}
+
+/* Input bar */
+.input-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 14px;border-top:1px solid var(--border);flex-shrink:0;
+  background:rgba(8,8,8,.98);
+}
+.input-inner{
+  flex:1;display:flex;align-items:center;
+  background:var(--raised);border:1px solid var(--border-sub);
+}
+.input-inner:focus-within{border-color:var(--border);}
+.attach-btn{background:transparent;border:none;color:var(--text-dim);width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;flex-shrink:0;transition:color .2s;}
+.attach-btn:hover{color:var(--red-bright);}
+#msgInput{flex:1;background:transparent;border:none;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:500;padding:10px 8px;outline:none;}
+#msgInput::placeholder{color:var(--text-dim);}
+.send-btn{background:var(--red);border:none;color:#fff;width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;flex-shrink:0;transition:background .2s;}
+.send-btn:hover{background:var(--red-bright);}
+
+/* ══════════════════════════════
+   RESPONSIVE — MOBILE FIRST
+══════════════════════════════ */
+/* Desktop: side-by-side */
+@media(min-width:641px){
+  .dm-panel{display:flex;}
+  .chat-panel{display:flex;}
+}
+
+/* Mobile: switch views */
+@media(max-width:640px){
+  .dm-panel{
+    width:100%;flex-shrink:0;
+    border-right:none;
+  }
+  /* Hide chat panel when showing list */
+  .shell.show-list .dm-panel{display:flex;}
+  .shell.show-list .chat-panel{display:none;}
+  /* Hide list when showing chat */
+  .shell.show-chat .dm-panel{display:none;}
+  .shell.show-chat .chat-panel{display:flex;}
+  /* Default: show list */
+  .dm-panel{display:flex;}
+  .chat-panel{display:none;}
+}
+
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <button class="icon-btn topbar-back" id="backBtn"><i class="fa-solid fa-arrow-left"></i></button>
+  <div class="topbar-logo" id="topLogo">WRAITH <span>//</span> DMS</div>
+  <div class="topbar-title" id="topTitle"></div>
+  <div class="topbar-status"><div class="live-dot"></div><span style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--text-dim);">ONLINE</span></div>
+  <a class="icon-btn" href="x_Dashboard.html" title="Dashboard"><i class="fa-solid fa-house"></i></a>
+</header>
+
+<!-- SHELL -->
+<div class="shell show-list" id="shell">
+
+  <!-- ══ DM PANEL (LIST) ══ -->
+  <div class="dm-panel" id="dmPanel">
+
+    <div class="dm-panel-header">
+      <div class="dm-panel-title"><i class="fa-solid fa-envelope"></i> Direct Messages</div>
+    </div>
+
+    <div class="dm-search">
+      <input type="text" id="searchInput" placeholder="Search conversations..." autocomplete="off"/>
+    </div>
+
+    <div class="dm-list">
+
+      <!-- PINNED ADMIN -->
+      <div class="sec-label"><i class="fa-solid fa-thumbtack" style="color:var(--admin-gold);"></i> Pinned</div>
+
+      <div class="admin-pin" id="adminPin">
+        <div class="pin-tag"><i class="fa-solid fa-shield-halved"></i> Admin Panel — Official</div>
+        <div class="admin-inner">
+          <div class="admin-av">
+            <i class="fa-solid fa-shield-halved"></i>
+            <div class="av-badge"><i class="fa-solid fa-star"></i></div>
+          </div>
+          <div class="admin-body">
+            <div class="admin-name">Admin Panel <span class="admin-tag-badge">ADMIN</span></div>
+            <div class="admin-preview" id="adminPreview">Official updates and decisions</div>
+          </div>
+          <div class="unread-badge" id="adminBadge" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- DM LIST -->
+      <div class="sec-label">Messages</div>
+      <div id="dmItems"></div>
+
+    </div>
+  </div>
+
+  <!-- ══ CHAT PANEL ══ -->
+  <div class="chat-panel" id="chatPanel">
+
+    <!-- Empty state -->
+    <div class="chat-empty" id="chatEmpty">
+      <div class="chat-empty-icon"><i class="fa-solid fa-comment-slash"></i></div>
+      <div class="chat-empty-title">No Chat Open</div>
+      <div class="chat-empty-sub">Select a conversation<br/>from the list to start</div>
+    </div>
+
+    <!-- Active chat -->
+    <div id="activeChat" class="hidden" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+
+      <div class="chat-head">
+        <div class="chat-head-left">
+          <div class="chat-head-av" id="chatHdAv"></div>
+          <div>
+            <div class="chat-head-name" id="chatHdName">—</div>
+            <div class="chat-head-status" id="chatHdStatus">offline</div>
+          </div>
+        </div>
+        <div class="chat-head-right">
+          <button class="icon-btn" id="closeChat" title="Close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>
+
+      <div class="scan-bar"><div class="scan-fill"></div></div>
+
+      <div class="pinned-banner hidden" id="pinnedBanner">
+        <i class="fa-solid fa-thumbtack"></i>
+        <div class="pinned-banner-text" id="pinnedText"></div>
+      </div>
+
+      <div class="msgs" id="msgs"></div>
+
+      <div class="input-bar">
+        <div class="input-inner">
+          <button class="attach-btn" onclick="document.getElementById('fileIn').click()"><i class="fa-solid fa-plus"></i></button>
+          <input type="text" id="msgInput" placeholder="Type a message..."/>
+        </div>
+        <button class="send-btn" id="sendBtn"><i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<input type="file" id="fileIn" accept="image/*" style="display:none;">
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+/* ══════════════════════════════════════════
+   DATA
+══════════════════════════════════════════ */
+const ADMIN = { id:'admin', name:'Admin Panel', isAdmin:true, status:'online', pinnedMsg:'All tryout decisions are final. DM for disputes only.', messages:[] };
+
+const DMS = [];
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let activeDm = null;
+const isMobile = () => window.innerWidth <= 640;
+
+/* ══════════════════════════════════════════
+   BUILD DM LIST
+══════════════════════════════════════════ */
+function buildList(filter=''){
+  const container = document.getElementById('dmItems');
+  container.innerHTML = '';
+  const list = DMS.filter(d => d.name.toLowerCase().includes(filter.toLowerCase()));
+  list.forEach((dm,i) => {
+    const el = document.createElement('div');
+    el.className = 'dm-item' + (dm.unread?' has-unread':'') + (activeDm===dm.id?' active':'');
+    el.dataset.id = dm.id;
+    el.style.animationDelay = (i*0.04)+'s';
+    el.innerHTML = `
+      <div class="dm-av">
+        ${dm.initials}
+        <div class="status-pip ${dm.status}"></div>
+      </div>
+      <div class="dm-body">
+        <div class="dm-name">${dm.name}</div>
+        <div class="dm-preview">${dm.preview}</div>
+      </div>
+      <div class="dm-meta">
+        <div class="dm-time">${dm.time}</div>
+        ${dm.unread ? `<div class="dm-badge">${dm.unread}</div>` : ''}
+      </div>`;
+    el.addEventListener('click', () => openDm(dm.id));
+    container.appendChild(el);
+  });
+}
+
+/* ══════════════════════════════════════════
+   OPEN DM
+══════════════════════════════════════════ */
+function openDm(id){
+  activeDm = id;
+  const isAdmin = id === 'admin';
+  const data = isAdmin ? ADMIN : DMS.find(d => d.id === id);
+
+  // Clear unread
+  if(!isAdmin){ const d=DMS.find(x=>x.id===id); if(d) d.unread=0; buildList(document.getElementById('searchInput').value); }
+  else { document.getElementById('adminBadge').style.display='none'; }
+
+  // Active state on sidebar
+  document.querySelectorAll('.dm-item,.admin-pin').forEach(el => el.classList.remove('active'));
+  const pinned = isAdmin ? document.getElementById('adminPin') : document.querySelector(`.dm-item[data-id="${id}"]`);
+  if(pinned) pinned.classList.add('active');
+
+  // Header
+  const hdAv = document.getElementById('chatHdAv');
+  const hdName = document.getElementById('chatHdName');
+  const hdStatus = document.getElementById('chatHdStatus');
+  if(isAdmin){
+    hdAv.className='chat-head-av adm'; hdAv.innerHTML='<i class="fa-solid fa-shield-halved"></i>';
+    hdName.className='chat-head-name adm'; hdName.textContent='Admin Panel';
+    hdStatus.className='chat-head-status online'; hdStatus.textContent='● ONLINE — Official Admin';
+  } else {
+    hdAv.className='chat-head-av'; hdAv.textContent=data.initials;
+    hdName.className='chat-head-name'; hdName.textContent=data.name;
+    const sc = data.status==='online'?'online':'';
+    hdStatus.className='chat-head-status '+sc;
+    hdStatus.textContent = data.status==='online'?'● Online':data.status==='away'?'◐ Away':'○ Offline';
+  }
+
+  // Topbar on mobile
+  if(isMobile()){
+    document.getElementById('backBtn').classList.add('show');
+    document.getElementById('topLogo').classList.add('hide');
+    document.getElementById('topTitle').textContent = isAdmin ? 'Admin Panel' : data.name;
+    document.getElementById('topTitle').classList.add('show');
+    document.getElementById('shell').className = 'shell show-chat';
+  }
+
+  // Pinned
+  const pb = document.getElementById('pinnedBanner');
+  if(isAdmin && ADMIN.pinnedMsg){
+    pb.classList.remove('hidden');
+    document.getElementById('pinnedText').textContent = ADMIN.pinnedMsg;
+  } else pb.classList.add('hidden');
+
+  // Input placeholder
+  document.getElementById('msgInput').placeholder = `Message ${isAdmin?'Admin Panel':data.name}...`;
+
+  // Render
+  renderMsgs(data.messages, isAdmin, data);
+
+  // Show chat
+  document.getElementById('chatEmpty').classList.add('hidden');
+  const ac = document.getElementById('activeChat');
+  ac.classList.remove('hidden');
+  ac.style.display='flex';
+
+  scrollBot();
+}
+
+/* ══════════════════════════════════════════
+   RENDER MESSAGES
+══════════════════════════════════════════ */
+function renderMsgs(messages, isAdmin, data){
+  const wrap = document.getElementById('msgs');
+  wrap.innerHTML = '';
+  let lastDate = null, lastFrom = null;
+
+  messages.forEach(msg => {
+    const isMe = msg.from === 'me';
+    const isAdminMsg = isAdmin && !isMe;
+
+    // Date separator
+    if(msg.date !== lastDate){
+      lastDate = msg.date; lastFrom = null;
+      const sep = document.createElement('div');
+      sep.className = 'date-sep';
+      sep.innerHTML = `<div class="date-sep-line"></div><div class="date-sep-label">${msg.date}</div><div class="date-sep-line"></div>`;
+      wrap.appendChild(sep);
+    }
+
+    const isCont = lastFrom === msg.from;
+    lastFrom = msg.from;
+
+    if(!isCont){
+      const grp = document.createElement('div');
+      grp.className = 'msg-grp';
+      const avClass = isAdminMsg ? 'adm' : isMe ? 'me' : '';
+      const avContent = isAdminMsg ? '<i class="fa-solid fa-shield-halved"></i>' : isMe ? 'ME' : (data?.initials || msg.from.slice(0,2).toUpperCase());
+      const authorClass = isAdminMsg ? 'adm' : isMe ? 'me' : '';
+      const authorName = isMe ? 'You' : isAdminMsg ? 'Admin Panel' : data?.name || msg.from;
+      grp.innerHTML = `
+        <div class="msg-av ${avClass}">${avContent}</div>
+        <div class="msg-content">
+          <div class="msg-header">
+            <span class="msg-author ${authorClass}">${authorName}${isAdminMsg?' <span class="msg-author-tag">ADMIN</span>':''}</span>
+            <span class="msg-ts">${msg.ts}</span>
+          </div>
+          <div class="msg-text ${isAdminMsg?'adm':''}">${esc(msg.text)}</div>
+          ${msg.img ? `<img src="${msg.img}" style="max-width:260px;margin-top:6px;border:1px solid var(--border-sub);" alt="img"/>` : ''}
+        </div>`;
+      wrap.appendChild(grp);
+    } else {
+      const cont = document.createElement('div');
+      cont.className = 'msg-cont';
+      cont.innerHTML = `
+        <span class="msg-hover-time">${msg.ts}</span>
+        <span class="msg-text ${isAdminMsg?'adm':''}">${esc(msg.text)}</span>
+        ${msg.img ? `<br><img src="${msg.img}" style="max-width:260px;margin-top:6px;border:1px solid var(--border-sub);" alt="img"/>` : ''}`;
+      wrap.appendChild(cont);
+    }
+  });
+}
+
+/* ══════════════════════════════════════════
+   SEND
+══════════════════════════════════════════ */
+function send(text, img=null){
+  if(!activeDm || (!text.trim() && !img)) return;
+  const isAdmin = activeDm === 'admin';
+  const data = isAdmin ? ADMIN : DMS.find(d => d.id === activeDm);
+  const now = new Date().toTimeString().slice(0,5);
+  const msg = {id:Date.now(), from:'me', text:text.trim(), ts:now, date:'TODAY'};
+  if(img) msg.img = img;
+  data.messages.push(msg);
+  if(!isAdmin){ data.preview = text.trim()||'📎 Image'; data.time='now'; buildList(document.getElementById('searchInput').value); document.querySelector(`.dm-item[data-id="${activeDm}"]`)?.classList.add('active'); }
+  else { document.getElementById('adminPreview').textContent = text.trim()||'📎 Image'; }
+  renderMsgs(data.messages, isAdmin, data);
+  scrollBot();
+}
+
+document.getElementById('sendBtn').addEventListener('click', () => {
+  const el = document.getElementById('msgInput');
+  if(el.value.trim()){ send(el.value); el.value=''; }
+});
+document.getElementById('msgInput').addEventListener('keydown', e => {
+  if(e.key==='Enter'){ e.preventDefault(); document.getElementById('sendBtn').click(); }
+});
+document.getElementById('fileIn').addEventListener('change', e => {
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader(); r.onload = ev => send('', ev.target.result); r.readAsDataURL(f);
+  e.target.value='';
+});
+
+/* ══════════════════════════════════════════
+   CLOSE / BACK
+══════════════════════════════════════════ */
+function closeChatView(){
+  activeDm = null;
+  document.getElementById('activeChat').classList.add('hidden');
+  document.getElementById('chatEmpty').classList.remove('hidden');
+  document.querySelectorAll('.dm-item,.admin-pin').forEach(el=>el.classList.remove('active'));
+  if(isMobile()){
+    document.getElementById('shell').className='shell show-list';
+    document.getElementById('backBtn').classList.remove('show');
+    document.getElementById('topLogo').classList.remove('hide');
+    document.getElementById('topTitle').classList.remove('show');
+  }
+}
+document.getElementById('closeChat').addEventListener('click', closeChatView);
+document.getElementById('backBtn').addEventListener('click', closeChatView);
+
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+function scrollBot(){ const w=document.getElementById('msgs'); setTimeout(()=>w.scrollTop=w.scrollHeight,30); }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ══════════════════════════════════════════
+   SEARCH
+══════════════════════════════════════════ */
+document.getElementById('searchInput').addEventListener('input', e => buildList(e.target.value));
+document.getElementById('adminPin').addEventListener('click', () => openDm('admin'));
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+buildList();
+
+
+</script>
+<script src="x_ui-bridge.js"></script>
+<script src="x_chat-sync.js"></script>
+</body>
+</html>
