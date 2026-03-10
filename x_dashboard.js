@@ -13,7 +13,7 @@ document.getElementById('topPfp').onclick = () => document.getElementById('profi
 document.getElementById('closeDropdown').onclick = () => document.getElementById('profileDropdown').classList.add('hidden');
 document.getElementById('menuBtn').onclick = () => document.getElementById('sideMenu').classList.toggle('hidden-left');
 document.getElementById('chatOpen').onclick = () => {
-  window.location.href = 'chat.html';
+  window.location.href = 'x_chat-main.html';
 };
 document.getElementById('closeChat').onclick = () => dashChat.classList.add('hidden');
 
@@ -89,3 +89,36 @@ window.addEventListener('resize', () => {
     document.getElementById('dashMsg').focus();
   }
 });
+
+
+function syncAnnouncements(msgs = []) {
+  const wrap = document.querySelector('.announce-list');
+  if (!wrap) return;
+  const rows = (msgs || []).slice(-3).reverse();
+  if (!rows.length) return;
+  wrap.innerHTML = '';
+  rows.forEach((m) => {
+    const item = document.createElement('div');
+    item.className = 'announce-item';
+    item.innerHTML = `<div class='announce-tag'>Server</div><div class='announce-text'>${m.text || ''}</div><div class='announce-date'>${new Date(m.createdAt || Date.now()).toLocaleString()}</div>`;
+    wrap.appendChild(item);
+  });
+}
+
+const announcementCache = [];
+socket.emit('getChannelMessages', 'announcement');
+socket.on('channelMessages', (msgs) => {
+  if (!document.querySelector('.announce-list')) return;
+  announcementCache.length = 0;
+  (msgs || []).forEach((m) => announcementCache.push(m));
+  syncAnnouncements(announcementCache);
+});
+socket.on('channelMessage', ({ channel, message }) => {
+  if (channel !== 'announcement') return;
+  announcementCache.push(message);
+  syncAnnouncements(announcementCache);
+});
+const rulesAction = document.querySelector('.action-btn[href="#"] i.fa-scroll');
+if (rulesAction) rulesAction.parentElement.setAttribute('href','x_rules.html');
+const activity = document.getElementById('activityFeed');
+if (activity) activity.closest('.card')?.remove();

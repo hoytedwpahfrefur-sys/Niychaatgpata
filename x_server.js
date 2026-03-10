@@ -8,12 +8,13 @@ let canPostReadonly = false;
 const dmCache = new Map();
 
 const container = document.getElementById('channelMessages');
-const layout = document.getElementById('serverLayout');
-const panel = document.getElementById('channelPanel');
+const layout = document.getElementById('app') || document.body;
+const panel = document.getElementById('messagePage') || document.getElementById('channelPanel');
 const dmBox = document.getElementById('dmMessages');
 const userModal = document.getElementById('userProfileModal');
 const dmForm = document.getElementById('dmForm');
 const dmSectionTitle = document.getElementById('dmSectionTitle');
+const channelForm = document.getElementById('channelForm');
 
 socket.emit('getUserData', username);
 socket.on('userData', (u) => {
@@ -30,22 +31,35 @@ function isReadonlyBlocked(channel) {
 }
 
 function updateFormVisibility(channel) {
-  document.getElementById('channelForm').classList.toggle('hidden', isReadonlyBlocked(channel));
+  if (!channelForm) return;
+  const blocked = isReadonlyBlocked(channel);
+  channelForm.classList.remove('hidden');
+  const textInput = document.getElementById('channelText');
+  const imgInput = document.getElementById('channelImage');
+  const sendBtn = channelForm.querySelector('button[type="submit"]');
+  if (textInput) {
+    textInput.disabled = blocked;
+    textInput.placeholder = blocked ? 'Read-only channel. Use #chat or #media to send.' : 'Message channel...';
+  }
+  if (imgInput) imgInput.disabled = blocked;
+  if (sendBtn) sendBtn.disabled = blocked;
 }
 
 function renderMsg(m) {
   const div = document.createElement('div');
   div.className = 'msg';
-  const meta = encodeURIComponent(JSON.stringify({
+  const userPayload = {
     username: m.username,
     displayName: m.displayName,
     robloxUsername: m.robloxUsername || m.username,
     pronoun: m.pronoun || 'Not set',
     description: m.description || 'No description',
     pfp: m.pfp || ''
-  }));
+  };
+  const meta = encodeURIComponent(JSON.stringify(userPayload));
 
-  div.innerHTML = `<img class='pfp' src='${m.pfp || 'https://placehold.co/40x40/red/white?text=U'}'><div><button class='name profile-link' data-user='${meta}'>${m.displayName}</button><div>${m.text || ''}</div>${m.image ? `<img src='${m.image}' style='max-width:200px;border-radius:8px;margin-top:6px'>` : ''}</div>`;
+  div.innerHTML = `<img class='pfp profile-link' data-user='${meta}' src='${m.pfp || 'https://placehold.co/40x40/red/white?text=U'}'>` +
+    `<div><button class='name profile-link' data-user='${meta}'>${m.displayName}</button><div>${m.text || ''}</div>${m.image ? `<img src='${m.image}' style='max-width:200px;border-radius:8px;margin-top:6px'>` : ''}</div>`;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
 }
@@ -83,41 +97,70 @@ function openUserModal(userData) {
 }
 
 function setActiveChannel(channel) {
-  document.querySelectorAll('.channel').forEach((btn) => btn.classList.toggle('active', btn.dataset.channel === channel));
+  document.querySelectorAll('.sidebar-channel, .channel, .ch-card').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.channel === channel);
+  });
 }
 
-function openChannel(ch) {
+function handleChannelSelection(ch) {
+  if (!ch) return;
   currentChannel = ch;
-  document.getElementById('currentChannel').textContent = `# ${ch}`;
   container.innerHTML = '';
   setActiveChannel(ch);
   updateFormVisibility(ch);
-  panel.classList.remove('hidden');
-  if (window.innerWidth <= 780) layout.classList.add('mobile-channel-open');
   socket.emit('getChannelMessages', ch);
+}
+
+function openChannelFromScript(ch) {
+  if (typeof window.openChannel === 'function') {
+    window.openChannel(ch);
+    return;
+  }
+  currentChannel = ch;
+  const nameEl = document.getElementById('msgChannelName') || document.getElementById('currentChannel');
+  if (nameEl) nameEl.textContent = ch;
+  if (panel) panel.classList.remove('hidden');
+  layout.classList.add('mobile-channel-open');
+  handleChannelSelection(ch);
 }
 
 function closeChannel() {
   if (window.innerWidth <= 780) {
     layout.classList.remove('mobile-channel-open');
-    panel.classList.add('hidden');
+    panel?.classList.add('hidden');
   }
 }
 
-document.getElementById('closeChannelView').addEventListener('click', closeChannel);
-document.getElementById('serverMenuBtn').addEventListener('click', () => {
-  document.getElementById('serverMiniMenu').classList.toggle('hidden-left');
-});
+const closeBtn = document.getElementById('closeChannelView') || document.getElementById('backToHome');
+if (closeBtn) closeBtn.addEventListener('click', closeChannel);
+
+const menuBtn = document.getElementById('serverMenuBtn');
+if (menuBtn) {
+  menuBtn.addEventListener('click', () => {
+    const m = document.getElementById('serverMiniMenu');
+    if (m) m.classList.toggle('hidden-left');
+  });
+}
+
 document.getElementById('closeUserModal').addEventListener('click', () => userModal.classList.add('hidden'));
 
-document.querySelectorAll('.channel').forEach((btn) => {
-  btn.onclick = () => openChannel(btn.dataset.channel);
+// Let page script control visual transition. We only sync backend state.
+document.addEventListener('channelSelected', (e) => {
+  handleChannelSelection(e.detail?.channel);
+});
+
+// Fallback if page script is missing handlers.
+document.querySelectorAll('.sidebar-channel, .channel, .ch-card').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    if (typeof window.openChannel === 'function') return;
+    openChannelFromScript(btn.dataset.channel);
+  });
 });
 
 container.addEventListener('click', (e) => {
-  const btn = e.target.closest('.profile-link');
-  if (!btn) return;
-  const userData = JSON.parse(decodeURIComponent(btn.dataset.user));
+  const link = e.target.closest('.profile-link');
+  if (!link) return;
+  const userData = JSON.parse(decodeURIComponent(link.dataset.user));
   openUserModal(userData);
 });
 
@@ -159,7 +202,7 @@ async function fileToData(file) {
   });
 }
 
-document.getElementById('channelForm').addEventListener('submit', async (e) => {
+channelForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = document.getElementById('channelText').value.trim();
   const imageFile = document.getElementById('channelImage').files?.[0];
@@ -199,4 +242,4 @@ document.getElementById('dmForm').addEventListener('submit', (e) => {
 });
 
 socket.on('channelError', (msg) => alert(msg));
-if (window.innerWidth > 780) openChannel(currentChannel);
+openChannelFromScript(currentChannel);
