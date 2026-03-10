@@ -4,12 +4,12 @@ This repository contains a multi-page clan website with a small realtime Node.js
 
 ## Pages
 
-- `index.html` – Welcome page + Roblox username capture
-- `profile.html` – Profile setup (PFP upload, display name, pronouns, description)
-- `Dashboard.html` – Stats cards, leaderboard, profile menu, dashboard chat panel
-- `Server.html` – Discord-style channel view
-- `72&#72--6.html` – Admin panel
-- `t1c€Tp0n@l.html` – Ticket panel
+- `x_index.html` – Welcome page + Roblox username capture
+- `x_profile.html` – Profile setup (PFP upload, display name, pronouns, description)
+- `x_Dashboard.html` – Stats cards, leaderboard, profile menu, dashboard chat panel
+- `x_server-main.html` – Discord-style channel view
+- `x_72&#72--6.html` – Admin panel
+- `x_t1c€Tp0n@l.html` – Ticket panel
 
 ## Run locally
 
@@ -27,10 +27,10 @@ This repository contains a multi-page clan website with a small realtime Node.js
 
 3. Open:
 
-   - http://localhost:3000/index.html
-   - http://localhost:3000/profile.html
-   - http://localhost:3000/Dashboard.html
-   - http://localhost:3000/Server.html
+   - http://localhost:3000/x_index.html
+   - http://localhost:3000/x_profile.html
+   - http://localhost:3000/x_Dashboard.html
+   - http://localhost:3000/x_server-main.html
 
 ## Why files may not appear on GitHub
 

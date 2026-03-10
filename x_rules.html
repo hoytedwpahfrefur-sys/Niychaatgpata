@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Clan Rules — Wraith</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --red:#c0000a;--red-bright:#ff1a27;--red-dim:#6b0005;
+  --red-glow:rgba(192,0,10,0.12);
+  --black:#060606;--surface:#0d0d0d;--panel:#0f0f0f;--raised:#161616;
+  --text:#ddd5d5;--text-dim:#5a4a4a;--text-mid:#8a7a7a;
+  --border:rgba(192,0,10,0.22);--border-sub:rgba(255,255,255,0.045);
+  --gold:#e8a020;
+  --topbar-h:52px;
+}
+html,body{min-height:100%;background:var(--black);color:var(--text);font-family:'Rajdhani',sans-serif;overflow-x:hidden;}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,0.07) 3px,rgba(0,0,0,0.07) 4px);}
+::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-thumb{background:var(--red-dim);}
+
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+.corner{position:fixed;width:48px;height:48px;z-index:50;pointer-events:none;}
+.corner::before{content:'';position:absolute;width:100%;height:1px;background:var(--red);}
+.corner::after{content:'';position:absolute;width:1px;height:100%;background:var(--red);}
+.c-tl{top:18px;left:18px;}.c-tr{top:18px;right:18px;transform:scaleX(-1);}
+.c-bl{bottom:18px;left:18px;transform:scaleY(-1);}.c-br{bottom:18px;right:18px;transform:scale(-1);}
+
+/* ── TOPBAR ── */
+.topbar{
+  position:sticky;top:0;left:0;right:0;height:var(--topbar-h);z-index:200;
+  background:rgba(8,8,8,.98);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;padding:0 20px;
+  animation:slideDown .45s ease both;
+}
+@keyframes slideDown{from{transform:translateY(-100%);}to{transform:translateY(0);}}
+.topbar-logo{font-family:'Bebas Neue',cursive;font-size:18px;letter-spacing:5px;color:var(--text);flex:1;}
+.topbar-logo span{color:var(--red);}
+.icon-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;flex-shrink:0;transition:color .2s,border-color .2s,background .2s;text-decoration:none;}
+.icon-btn:hover{color:var(--red-bright);border-color:var(--red);background:var(--red-glow);}
+.read-badge{
+  font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;
+  padding:5px 12px;border:1px solid rgba(46,204,113,.35);
+  color:#2ecc71;background:rgba(46,204,113,.08);
+  display:none;align-items:center;gap:7px;
+}
+.read-badge.show{display:flex;}
+.read-badge i{font-size:9px;}
+
+/* ── PAGE WRAP ── */
+.wrap{
+  position:relative;z-index:1;
+  max-width:760px;margin:0 auto;
+  padding:36px 24px 100px;
+  display:flex;flex-direction:column;gap:0;
+}
+
+/* ── DOCUMENT HEADER ── */
+.doc-header{
+  border:1px solid var(--border);
+  background:var(--panel);
+  padding:28px 32px;
+  position:relative;
+  margin-bottom:24px;
+  animation:fadeUp .6s ease .05s both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.doc-header::before{content:'';position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:2px solid var(--red);border-left:2px solid var(--red);}
+.doc-header::after {content:'';position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:2px solid var(--red);border-right:2px solid var(--red);}
+
+.doc-stamp{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:5px;
+  color:var(--red);text-transform:uppercase;
+  border:1px solid var(--border);padding:3px 12px;
+  margin-bottom:16px;
+}
+.doc-title{font-family:'Bebas Neue',cursive;font-size:clamp(34px,7vw,56px);letter-spacing:9px;color:var(--text);line-height:1;}
+.doc-sub{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:4px;color:var(--text-dim);margin-top:8px;text-transform:uppercase;line-height:1.9;}
+.doc-sub span{color:var(--red);}
+
+.doc-meta-row{
+  display:flex;gap:20px;flex-wrap:wrap;
+  margin-top:18px;padding-top:16px;
+  border-top:1px solid var(--border-sub);
+}
+.doc-meta{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--text-dim);}
+.doc-meta strong{color:var(--text-mid);}
+
+/* ── SCAN BAR ── */
+.scan-bar{height:1px;background:rgba(192,0,10,.07);position:relative;overflow:hidden;margin-bottom:24px;}
+.scan-fill{position:absolute;top:0;left:-60%;width:60%;height:100%;background:linear-gradient(to right,transparent,var(--red-bright),transparent);animation:scanm 2.8s ease-in-out infinite;}
+@keyframes scanm{from{left:-60%;}to{left:110%;}}
+
+/* ── SECTION ── */
+.rule-section{
+  border:1px solid var(--border-sub);background:var(--panel);
+  margin-bottom:14px;
+  animation:fadeUp .5s ease both;
+  overflow:hidden;
+}
+.rule-section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;background:var(--raised);
+  border-bottom:1px solid var(--border-sub);
+  cursor:pointer;user-select:none;
+  transition:background .2s;
+}
+.rule-section-header:hover{background:rgba(30,30,30,1);}
+.rule-section-header-left{display:flex;align-items:center;gap:12px;}
+.rule-section-num{
+  font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:2px;color:var(--red);
+  width:28px;text-align:center;flex-shrink:0;
+}
+.rule-section-name{font-family:'Bebas Neue',cursive;font-size:15px;letter-spacing:4px;color:var(--text);}
+.rule-section-tag{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:3px;color:var(--text-dim);text-transform:uppercase;border:1px solid var(--border-sub);padding:2px 8px;display:none;}
+.rule-section-chevron{font-size:10px;color:var(--text-dim);transition:transform .25s;}
+.rule-section.open .rule-section-chevron{transform:rotate(180deg);}
+.rule-section.open .rule-section-header{border-bottom-color:var(--border);}
+
+.rule-section-body{
+  max-height:0;overflow:hidden;
+  transition:max-height .35s cubic-bezier(.4,0,.2,1);
+}
+.rule-section.open .rule-section-body{max-height:1000px;}
+
+.rule-list{padding:6px 0;}
+.rule-item{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:12px 20px;border-bottom:1px solid var(--border-sub);
+  transition:background .15s;
+}
+.rule-item:last-child{border-bottom:none;}
+.rule-item:hover{background:rgba(255,255,255,.015);}
+.rule-num{
+  font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:1px;
+  color:var(--red-dim);flex-shrink:0;margin-top:3px;min-width:28px;
+}
+.rule-content{}
+.rule-title{font-family:'Rajdhani',sans-serif;font-weight:700;font-size:14px;letter-spacing:1px;color:var(--text);}
+.rule-desc{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:1px;color:var(--text-dim);margin-top:4px;line-height:1.8;}
+.rule-desc span{color:var(--red-bright);}
+
+/* severity tags */
+.severity{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:2px;
+  padding:2px 8px;border-radius:0;margin-top:6px;
+}
+.sev-ban{background:rgba(255,26,39,.1);border:1px solid rgba(255,26,39,.3);color:var(--red-bright);}
+.sev-warn{background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.3);color:#f39c12;}
+.sev-kick{background:rgba(192,0,10,.1);border:1px solid rgba(192,0,10,.25);color:var(--red);}
+
+/* ── SIGNATURES ── */
+.sig-block{
+  border:1px solid var(--border);background:var(--panel);
+  padding:24px 28px;margin-top:10px;position:relative;
+  animation:fadeUp .5s ease .5s both;
+}
+.sig-block::before{content:'CLASSIFIED DOCUMENT';position:absolute;top:-1px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:4px;color:var(--red-dim);background:var(--panel);padding:0 10px;}
+.sig-title{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:4px;color:var(--text-dim);text-transform:uppercase;margin-bottom:18px;}
+.sig-row{display:flex;gap:24px;flex-wrap:wrap;}
+.sig-item{flex:1;min-width:180px;}
+.sig-line{height:1px;background:rgba(255,255,255,.1);margin-bottom:6px;position:relative;}
+.sig-line::before{content:'';position:absolute;left:0;top:0;width:0;height:100%;background:var(--red-dim);animation:sigfill 1s ease 1.2s both;}
+@keyframes sigfill{to{width:100%;}}
+.sig-name{font-family:'Bebas Neue',cursive;font-size:16px;letter-spacing:3px;color:var(--text);}
+.sig-role{font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:2px;color:var(--red);}
+
+/* ── CONFIRM FOOTER ── */
+.confirm-footer{
+  position:fixed;bottom:0;left:0;right:0;z-index:150;
+  background:rgba(6,6,6,.97);border-top:1px solid var(--border);
+  padding:14px 24px;display:flex;align-items:center;gap:16px;
+  flex-wrap:wrap;
+  transition:opacity .3s,transform .3s;
+}
+.confirm-footer.accepted{opacity:0;transform:translateY(20px);pointer-events:none;}
+.confirm-text{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text-dim);flex:1;line-height:1.7;}
+.confirm-text strong{color:var(--red);}
+.confirm-btn{
+  position:relative;display:inline-flex;align-items:center;gap:10px;
+  padding:12px 30px;background:transparent;border:1px solid var(--red);
+  color:var(--text);font-family:'Rajdhani',sans-serif;font-weight:700;
+  font-size:13px;letter-spacing:5px;text-transform:uppercase;
+  cursor:pointer;overflow:hidden;flex-shrink:0;
+  transition:color .3s,box-shadow .3s;
+}
+.confirm-btn::before{content:'';position:absolute;inset:0;background:var(--red);transform:scaleX(0);transform-origin:left;transition:transform .35s cubic-bezier(.4,0,.2,1);z-index:-1;}
+.confirm-btn:hover::before{transform:scaleX(1);}
+.confirm-btn:hover{color:#fff;box-shadow:0 0 28px rgba(192,0,10,.4);}
+.confirm-check{display:flex;align-items:center;gap:10px;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text-dim);cursor:pointer;flex-shrink:0;}
+.confirm-check input{accent-color:var(--red);width:14px;height:14px;cursor:pointer;}
+
+/* accepted toast */
+.toast{
+  position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.35);
+  color:#2ecc71;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;
+  padding:10px 24px;z-index:200;opacity:0;
+  transition:opacity .3s,transform .3s;display:flex;align-items:center;gap:10px;
+  pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+@media(max-width:560px){
+  .doc-header{padding:20px 18px;}
+  .wrap{padding:24px 14px 90px;}
+  .sig-row{flex-direction:column;gap:16px;}
+  .confirm-footer{flex-direction:column;align-items:flex-start;gap:10px;}
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+<div class="corner c-tl"></div>
+<div class="corner c-tr"></div>
+<div class="corner c-bl"></div>
+<div class="corner c-br"></div>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-logo">WRAITH <span>//</span> RULES</div>
+  <div class="read-badge" id="readBadge"><i class="fa-solid fa-check"></i> Rules Read</div>
+  <a class="icon-btn" href="x_Dashboard.html"><i class="fa-solid fa-house"></i></a>
+  <a class="icon-btn" href="x_stats.html"><i class="fa-solid fa-chart-simple"></i></a>
+</header>
+
+<div class="wrap">
+
+  <!-- DOCUMENT HEADER -->
+  <div class="doc-header">
+    <div class="doc-stamp"><i class="fa-solid fa-shield-halved"></i> Official Clan Document</div>
+    <div class="doc-title">Rules &amp; Regulations</div>
+    <div class="doc-sub">
+      Wraith Clan · Season 1 · All members must comply<br/>
+      Violation = <span>immediate punishment</span> · No exceptions
+    </div>
+    <div class="doc-meta-row">
+      <div class="doc-meta"><strong>Version:</strong> 1.0</div>
+      <div class="doc-meta"><strong>Status:</strong> Active</div>
+      <div class="doc-meta"><strong>Sections:</strong> 5</div>
+      <div class="doc-meta"><strong>Total Rules:</strong> 18</div>
+      <div class="doc-meta"><strong>Last Updated:</strong> Season 1</div>
+    </div>
+  </div>
+
+  <div class="scan-bar"><div class="scan-fill"></div></div>
+
+  <!-- SECTION 1 — GENERAL CONDUCT -->
+  <div class="rule-section open" style="animation-delay:.1s;">
+    <div class="rule-section-header" onclick="toggleSection(this)">
+      <div class="rule-section-header-left">
+        <div class="rule-section-num">01</div>
+        <div class="rule-section-name">General Conduct</div>
+      </div>
+      <i class="fa-solid fa-chevron-down rule-section-chevron"></i>
+    </div>
+    <div class="rule-section-body">
+      <div class="rule-list">
+        <div class="rule-item">
+          <div class="rule-num">1.1</div>
+          <div class="rule-content">
+            <div class="rule-title">Respect All Members</div>
+            <div class="rule-desc">Treat every clan member with respect regardless of rank or skill level. Harassment, bullying, or targeted disrespect will not be tolerated.</div>
+            <div class="severity sev-warn"><i class="fa-solid fa-triangle-exclamation"></i> Warning → Kick</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">1.2</div>
+          <div class="rule-content">
+            <div class="rule-title">No Toxicity</div>
+            <div class="rule-desc">Excessive trash talk, rage, or toxic behaviour in clan activities or the server is forbidden. Keep it competitive, not personal.</div>
+            <div class="severity sev-warn"><i class="fa-solid fa-triangle-exclamation"></i> Warning → Kick</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">1.3</div>
+          <div class="rule-content">
+            <div class="rule-title">No Discrimination</div>
+            <div class="rule-desc">Zero tolerance for racism, sexism, or any form of discrimination. Any slur or targeted hate = <span>instant ban, no appeal.</span></div>
+            <div class="severity sev-ban"><i class="fa-solid fa-ban"></i> Instant Permanent Ban</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2 — ACTIVITY -->
+  <div class="rule-section" style="animation-delay:.15s;">
+    <div class="rule-section-header" onclick="toggleSection(this)">
+      <div class="rule-section-header-left">
+        <div class="rule-section-num">02</div>
+        <div class="rule-section-name">Activity Requirements</div>
+      </div>
+      <i class="fa-solid fa-chevron-down rule-section-chevron"></i>
+    </div>
+    <div class="rule-section-body">
+      <div class="rule-list">
+        <div class="rule-item">
+          <div class="rule-num">2.1</div>
+          <div class="rule-content">
+            <div class="rule-title">Minimum Weekly Activity</div>
+            <div class="rule-desc">All members must be active at least <span>3 times per week.</span> Inactive members with no notice will be removed after 7 days.</div>
+            <div class="severity sev-kick"><i class="fa-solid fa-right-from-bracket"></i> Removal After 7 Days</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">2.2</div>
+          <div class="rule-content">
+            <div class="rule-title">LOA (Leave of Absence)</div>
+            <div class="rule-desc">If you need time off, DM an admin before going inactive. An approved LOA protects your spot in the clan.</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">2.3</div>
+          <div class="rule-content">
+            <div class="rule-title">Clan Events</div>
+            <div class="rule-desc">Attendance at <span>official clan events and wars</span> is mandatory for Main Lineup members. Missing 3 events without notice = demotion.</div>
+            <div class="severity sev-warn"><i class="fa-solid fa-triangle-exclamation"></i> Demotion</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3 — GAMEPLAY -->
+  <div class="rule-section" style="animation-delay:.2s;">
+    <div class="rule-section-header" onclick="toggleSection(this)">
+      <div class="rule-section-header-left">
+        <div class="rule-section-num">03</div>
+        <div class="rule-section-name">Gameplay &amp; Fair Play</div>
+      </div>
+      <i class="fa-solid fa-chevron-down rule-section-chevron"></i>
+    </div>
+    <div class="rule-section-body">
+      <div class="rule-list">
+        <div class="rule-item">
+          <div class="rule-num">3.1</div>
+          <div class="rule-content">
+            <div class="rule-title">No Cheating or Exploiting</div>
+            <div class="rule-desc">Using hacks, exploits, or any unauthorised third-party tools in any game mode is <span>strictly forbidden.</span></div>
+            <div class="severity sev-ban"><i class="fa-solid fa-ban"></i> Instant Permanent Ban</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">3.2</div>
+          <div class="rule-content">
+            <div class="rule-title">Represent the Clan Properly</div>
+            <div class="rule-desc">When playing under the Wraith tag, your behaviour reflects the whole clan. Poor sportsmanship in public lobbies reflects on us all.</div>
+            <div class="severity sev-warn"><i class="fa-solid fa-triangle-exclamation"></i> Warning → Kick</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">3.3</div>
+          <div class="rule-content">
+            <div class="rule-title">No Kill Farming Between Members</div>
+            <div class="rule-desc">Artificially boosting your kill count by farming other Wraith members is not allowed. Stats must be legitimate.</div>
+            <div class="severity sev-kick"><i class="fa-solid fa-right-from-bracket"></i> Kick + Stat Reset</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">3.4</div>
+          <div class="rule-content">
+            <div class="rule-title">Tryout Results are Final</div>
+            <div class="rule-desc">All tryout accept and decline decisions made by admins are final. Do not reapply if declined. Doing so results in a <span>permanent ban.</span></div>
+            <div class="severity sev-ban"><i class="fa-solid fa-ban"></i> Permanent Ban</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4 — SERVER -->
+  <div class="rule-section" style="animation-delay:.25s;">
+    <div class="rule-section-header" onclick="toggleSection(this)">
+      <div class="rule-section-header-left">
+        <div class="rule-section-num">04</div>
+        <div class="rule-section-name">Server &amp; Communication</div>
+      </div>
+      <i class="fa-solid fa-chevron-down rule-section-chevron"></i>
+    </div>
+    <div class="rule-section-body">
+      <div class="rule-list">
+        <div class="rule-item">
+          <div class="rule-num">4.1</div>
+          <div class="rule-content">
+            <div class="rule-title">Stay On Topic</div>
+            <div class="rule-desc">Use the correct channels for their intended purpose. Spamming or going off-topic in lineup or announcement channels is not allowed.</div>
+            <div class="severity sev-warn"><i class="fa-solid fa-triangle-exclamation"></i> Warning</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">4.2</div>
+          <div class="rule-content">
+            <div class="rule-title">No Spam or Flooding</div>
+            <div class="rule-desc">Sending repeated messages, mass pinging, or flooding any channel is forbidden.</div>
+            <div class="severity sev-kick"><i class="fa-solid fa-right-from-bracket"></i> Kick</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">4.3</div>
+          <div class="rule-content">
+            <div class="rule-title">No NSFW Content</div>
+            <div class="rule-desc">Sharing inappropriate, graphic, or NSFW content anywhere on this platform results in an <span>immediate ban.</span></div>
+            <div class="severity sev-ban"><i class="fa-solid fa-ban"></i> Instant Permanent Ban</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">4.4</div>
+          <div class="rule-content">
+            <div class="rule-title">Respect Admin Decisions</div>
+            <div class="rule-desc">Do not argue or undermine admin decisions publicly. If you have a dispute, DM an admin privately and respectfully.</div>
+            <div class="severity sev-warn"><i class="fa-solid fa-triangle-exclamation"></i> Warning → Kick</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5 — RANKS -->
+  <div class="rule-section" style="animation-delay:.3s;">
+    <div class="rule-section-header" onclick="toggleSection(this)">
+      <div class="rule-section-header-left">
+        <div class="rule-section-num">05</div>
+        <div class="rule-section-name">Ranks &amp; Promotions</div>
+      </div>
+      <i class="fa-solid fa-chevron-down rule-section-chevron"></i>
+    </div>
+    <div class="rule-section-body">
+      <div class="rule-list">
+        <div class="rule-item">
+          <div class="rule-num">5.1</div>
+          <div class="rule-content">
+            <div class="rule-title">Rank Hierarchy</div>
+            <div class="rule-desc">Ranks in order: <span>Admin → Elite → Main Lineup → Sub → Recruit.</span> Each rank comes with different privileges and responsibilities.</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">5.2</div>
+          <div class="rule-content">
+            <div class="rule-title">Earning Promotions</div>
+            <div class="rule-desc">Promotions are based on <span>kills, activity, attitude, and event performance.</span> You cannot request a promotion — admins decide.</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">5.3</div>
+          <div class="rule-content">
+            <div class="rule-title">Demotions</div>
+            <div class="rule-desc">Breaking rules, going inactive, or poor conduct can result in demotion. Repeated demotions result in removal.</div>
+            <div class="severity sev-warn"><i class="fa-solid fa-triangle-exclamation"></i> Demotion</div>
+          </div>
+        </div>
+        <div class="rule-item">
+          <div class="rule-num">5.4</div>
+          <div class="rule-content">
+            <div class="rule-title">Impersonating Ranks</div>
+            <div class="rule-desc">Pretending to be an admin or higher rank than you are is an <span>instant permanent ban.</span></div>
+            <div class="severity sev-ban"><i class="fa-solid fa-ban"></i> Instant Permanent Ban</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIGNATURE BLOCK -->
+  <div class="sig-block">
+    <div class="sig-title">// Authorised &amp; Ratified By</div>
+    <div class="sig-row">
+      <div class="sig-item">
+        <div class="sig-line"></div>
+        <div class="sig-name">Wraith Admin</div>
+        <div class="sig-role">Head Administrator</div>
+      </div>
+      <div class="sig-item">
+        <div class="sig-line"></div>
+        <div class="sig-name">Wraith Council</div>
+        <div class="sig-role">Clan Leadership</div>
+      </div>
+      <div class="sig-item">
+        <div class="sig-line"></div>
+        <div class="sig-name">Season 1 — v1.0</div>
+        <div class="sig-role">Document Revision</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- CONFIRM FOOTER -->
+<div class="confirm-footer" id="confirmFooter">
+  <div class="confirm-text">
+    You must read and agree to all rules before accessing the clan.<br/>
+    <strong>Ignorance is not an excuse.</strong> Breaking rules = punishment.
+  </div>
+  <label class="confirm-check">
+    <input type="checkbox" id="readCheck"/> I have read all rules
+  </label>
+  <button class="confirm-btn" id="confirmBtn" onclick="confirmRead()">
+    <i class="fa-solid fa-check"></i> Agree &amp; Confirm
+  </button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><i class="fa-solid fa-shield-check"></i> Rules confirmed — you're cleared.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* THREE.JS */
+(function(){
+  const cvs=document.getElementById('bg-canvas');
+  const R=new THREE.WebGLRenderer({canvas:cvs,antialias:true,alpha:true});
+  R.setPixelRatio(Math.min(devicePixelRatio,2));R.setSize(innerWidth,innerHeight);R.setClearColor(0,0);
+  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,100);
+  camera.position.z=5;
+  const mk=(G,a,c,o)=>new THREE.Mesh(new G(...a),new THREE.MeshBasicMaterial({color:c,wireframe:true,transparent:true,opacity:o}));
+  const ico=mk(THREE.IcosahedronGeometry,[1.8,1],0xc0000a,.1);ico.position.set(4,-.5,-2.5);scene.add(ico);
+  const oct=mk(THREE.OctahedronGeometry,[.8,0],0xff1a27,.07);oct.position.set(-4,1.6,-3);scene.add(oct);
+  const N=200,pos=new Float32Array(N*3),spd=[];
+  for(let i=0;i<N;i++){pos[i*3]=(Math.random()-.5)*22;pos[i*3+1]=(Math.random()-.5)*16;pos[i*3+2]=(Math.random()-.5)*10-2;spd.push({x:(Math.random()-.5)*.0015,y:(Math.random()-.5)*.0012});}
+  const pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  scene.add(new THREE.Points(pg,new THREE.PointsMaterial({color:0xc0000a,size:.034,transparent:true,opacity:.3})));
+  window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);});
+  let t=0;(function loop(){requestAnimationFrame(loop);t+=.007;
+    ico.rotation.x=t*.12;ico.rotation.y=t*.16;oct.rotation.x=-t*.18;oct.rotation.y=t*.14;
+    const p=pg.attributes.position.array;
+    for(let i=0;i<N;i++){p[i*3]+=spd[i].x;p[i*3+1]+=spd[i].y+Math.sin(t+i)*.0005;if(p[i*3]>11)p[i*3]=-11;if(p[i*3]<-11)p[i*3]=11;if(p[i*3+1]>8)p[i*3+1]=-8;if(p[i*3+1]<-8)p[i*3+1]=8;}
+    pg.attributes.position.needsUpdate=true;R.render(scene,camera);})();
+})();
+
+/* SECTION TOGGLE */
+function toggleSection(header){
+  const section = header.closest('.rule-section');
+  section.classList.toggle('open');
+}
+
+/* CONFIRM */
+function confirmRead(){
+  if(!document.getElementById('readCheck').checked){
+    document.getElementById('readCheck').closest('label').style.color='var(--red-bright)';
+    setTimeout(()=>document.getElementById('readCheck').closest('label').style.color='',800);
+    return;
+  }
+  localStorage.setItem('wraithRulesRead','true');
+  document.getElementById('confirmFooter').classList.add('accepted');
+  document.getElementById('readBadge').classList.add('show');
+  const toast = document.getElementById('toast');
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), 3500);
+}
+
+/* Check if already confirmed */
+if(localStorage.getItem('wraithRulesRead')==='true'){
+  document.getElementById('confirmFooter').classList.add('accepted');
+  document.getElementById('readBadge').classList.add('show');
+}
+</script>
+<script src="x_ui-bridge.js"></script>
+</body>
+</html>
